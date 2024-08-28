@@ -6,8 +6,8 @@ IDL_FILE="$FILE_NAME.json"
 TYPES_FILE="$FILE_NAME.ts"
 
 # Source dirs
-IDL_DIR="anchor/target/idl"
-TYPES_DIR="anchor/target/types"
+IDL_DIR="program/target/idl"
+TYPES_DIR="program/target/types"
 
 # Destination dir
 FRONTEND_IDL_DIR="app/src/idls"

@@ -1,5 +1,5 @@
 import { produce } from "immer";
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 const gridSize = 32;
 const operations: number[][] = [

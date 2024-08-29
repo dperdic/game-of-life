@@ -1,19 +1,16 @@
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Slide, ToastContainer } from "react-toastify";
+import Board from "./Board";
 import "react-toastify/dist/ReactToastify.css";
 
 export default function Main() {
   const { publicKey } = useWallet();
 
   return (
-    <main
-      className={`mt-18 h-full w-full flex-grow px-8 py-8 sm:px-16 ${
-        !publicKey && "flex items-center justify-center"
-      }}`}
-    >
+    <main className="mt-18 flex h-full w-full flex-grow items-center justify-center px-8 py-8 sm:px-16">
       {publicKey ? (
-        <div className="flex flex-col gap-12">
-          <></>
+        <div className="mx-auto w-full max-w-3xl">
+          <Board />
         </div>
       ) : (
         <div className="mx-auto w-full max-w-2xl">

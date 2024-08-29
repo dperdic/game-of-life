@@ -30,8 +30,8 @@ export default function Main() {
         closeOnClick={false}
         rtl={false}
         pauseOnFocusLoss
-        draggable
-        pauseOnHover
+        draggable={false}
+        pauseOnHover={true}
         theme="light"
         transition={Slide}
       />

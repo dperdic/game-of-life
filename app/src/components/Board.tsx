@@ -1,7 +1,10 @@
 import { produce } from "immer";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const gridSize = 64;
+const gridSize = 32;
+const minSpeed = 0.5;
+const maxSpeed = 16;
+const initialSpeed = { value: 1, milliseconds: 1000 };
 const surroundingFieldCoords: number[][] = [
   [-1, 0], // top
   [1, 0], // bottom
@@ -12,7 +15,6 @@ const surroundingFieldCoords: number[][] = [
   [-1, -1], // bottom left
   [1, 1], // bottom right
 ];
-const initialSpeed = { value: 1, milliseconds: 1000 };
 
 // push zeroes in all fields
 const generateEmptyGrid = () => {
@@ -102,18 +104,11 @@ export default function Board() {
   }, []);
 
   const modifySpeed = (increase: boolean) => {
-    setSpeed((current) => ({
-      value: increase
-        ? current.value < 16
-          ? current.value * 2
-          : current.value
-        : current.value / 2,
-
+    setSpeed((currentSpeed) => ({
+      value: increase ? currentSpeed.value * 2 : currentSpeed.value / 2,
       milliseconds: increase
-        ? current.value < 16
-          ? current.milliseconds / 2
-          : current.milliseconds
-        : current.milliseconds * 2,
+        ? currentSpeed.milliseconds / 2
+        : currentSpeed.milliseconds * 2,
     }));
   };
 
@@ -195,6 +190,7 @@ export default function Board() {
             type="button"
             className="btn btn-sm btn-white"
             onClick={() => modifySpeed(false)}
+            disabled={speed.value <= minSpeed}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -216,6 +212,7 @@ export default function Board() {
             type="button"
             className="btn btn-sm btn-white"
             onClick={() => modifySpeed(true)}
+            disabled={speed.value >= maxSpeed}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

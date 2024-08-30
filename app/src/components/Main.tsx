@@ -9,7 +9,7 @@ export default function Main() {
   return (
     <main className="mt-18 flex h-full w-full flex-grow items-center justify-center px-8 py-8 sm:px-16">
       {publicKey ? (
-        <div className="mx-auto w-full max-w-3xl">
+        <div className="mx-auto w-full max-w-6xl">
           <Board />
         </div>
       ) : (

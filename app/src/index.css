@@ -21,7 +21,7 @@ body {
 }
 
 .btn-sm {
-  @apply rounded-md p-3 text-sm;
+  @apply rounded-md px-3 py-2.5 text-sm;
 }
 
 .btn-md {

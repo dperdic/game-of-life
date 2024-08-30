@@ -1,17 +1,18 @@
 import { produce } from "immer";
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-const gridSize = 32;
-const operations: number[][] = [
-  [0, 1],
-  [0, -1],
-  [1, -1],
-  [-1, 1],
-  [1, 1],
-  [-1, -1],
-  [1, 0],
-  [-1, 0],
+const gridSize = 64;
+const surroundingFieldCoords: number[][] = [
+  [-1, 0], // top
+  [1, 0], // bottom
+  [0, -1], // left
+  [0, 1], // right
+  [-1, 1], // top left
+  [1, -1], // top right
+  [-1, -1], // bottom left
+  [1, 1], // bottom right
 ];
+const initialSpeed = { value: 1, milliseconds: 1000 };
 
 // push zeroes in all fields
 const generateEmptyGrid = () => {
@@ -43,15 +44,24 @@ function getRandomColor() {
 }
 
 export default function Board() {
-  const [grid, setGrid] = useState<number[][]>(() => generateEmptyGrid());
-  const [running, setRunning] = useState<boolean>(false);
   const [generation, setGeneration] = useState<number>(0);
+  const [grid, setGrid] = useState<number[][]>(() => generateEmptyGrid());
 
+  const [running, setRunning] = useState<boolean>(false);
   const runningRef = useRef(running);
 
-  runningRef.current = running;
+  const [speed, setSpeed] = useState(initialSpeed);
+  const speedRef = useRef(speed.milliseconds);
 
-  const runSimulation = () => {
+  useEffect(() => {
+    speedRef.current = speed.milliseconds;
+  }, [speed]);
+
+  useEffect(() => {
+    runningRef.current = running;
+  }, [running]);
+
+  const runSimulation = useCallback(() => {
     if (!runningRef.current) {
       return;
     }
@@ -59,13 +69,15 @@ export default function Board() {
     setGeneration((currentGeneration) => currentGeneration + 1);
 
     setGrid((currentGrid) => {
-      return produce(currentGrid, (gridCopy) => {
+      return produce(currentGrid, (newGrid) => {
         for (let i = 0; i < gridSize; i++) {
           for (let j = 0; j < gridSize; j++) {
             let neighbors = 0;
-            operations.forEach(([x, y]) => {
+
+            surroundingFieldCoords.forEach(([x, y]) => {
               const newI = i + x;
               const newJ = j + y;
+
               if (
                 newI >= 0 &&
                 newI < gridSize &&
@@ -77,16 +89,40 @@ export default function Board() {
             });
 
             if (neighbors < 2 || neighbors > 3) {
-              gridCopy[i][j] = 0;
+              newGrid[i][j] = 0;
             } else if (currentGrid[i][j] === 0 && neighbors === 3) {
-              gridCopy[i][j] = 1;
+              newGrid[i][j] = 1;
             }
           }
         }
       });
     });
 
-    setTimeout(runSimulation, 1000);
+    setTimeout(runSimulation, speedRef.current);
+  }, []);
+
+  const modifySpeed = (increase: boolean) => {
+    setSpeed((current) => ({
+      value: increase
+        ? current.value < 16
+          ? current.value * 2
+          : current.value
+        : current.value / 2,
+
+      milliseconds: increase
+        ? current.value < 16
+          ? current.milliseconds / 2
+          : current.milliseconds
+        : current.milliseconds * 2,
+    }));
+  };
+
+  const reset = (randomize: boolean) => {
+    setRunning(false);
+    setGeneration(0);
+    setSpeed(initialSpeed);
+
+    setGrid(() => (randomize ? generateRandomGrid() : generateEmptyGrid()));
   };
 
   return (
@@ -111,9 +147,9 @@ export default function Board() {
 
                   setGrid(newGrid);
                 }}
-                className="h-3 w-3 border border-gray-300"
+                className="size-4 border border-gray-300"
                 style={{
-                  backgroundColor: grid[i][j] ? `${getRandomColor()}` : "white",
+                  backgroundColor: grid[i][j] ? "black" : "white",
                 }}
               ></div>
             )),
@@ -141,12 +177,7 @@ export default function Board() {
         <button
           type="button"
           className="btn btn-md btn-white"
-          onClick={() => {
-            setRunning(false);
-            setGrid(() => generateEmptyGrid());
-            runningRef.current = false;
-            setGeneration(0);
-          }}
+          onClick={() => reset(false)}
         >
           Reset
         </button>
@@ -154,16 +185,48 @@ export default function Board() {
         <button
           type="button"
           className="btn btn-md btn-white"
-          onClick={() => {
-            setRunning(false);
-            runningRef.current = false;
-            setGeneration(0);
-
-            setGrid(() => generateRandomGrid());
-          }}
+          onClick={() => reset(true)}
         >
           Randomize
         </button>
+
+        <div className="flex flex-row gap-3">
+          <button
+            type="button"
+            className="btn btn-sm btn-white"
+            onClick={() => modifySpeed(false)}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              className="size-5"
+            >
+              <path
+                fillRule="evenodd"
+                d="M4 10a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H4.75A.75.75 0 0 1 4 10Z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+
+          <span className="py-3">{speed.value}x</span>
+
+          <button
+            type="button"
+            className="btn btn-sm btn-white"
+            onClick={() => modifySpeed(true)}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              className="size-5"
+            >
+              <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   );

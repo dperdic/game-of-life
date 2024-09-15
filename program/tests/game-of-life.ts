@@ -133,6 +133,6 @@ describe("game-of-life", () => {
 
     const unpackedGrid = unpackGrid(fetchedGrid.packedGrid);
 
-    expect(unpackedGrid).deep.equal(initialGrid);
+    expect(unpackedGrid).to.deep.equal(initialGrid);
   });
 });

@@ -6,7 +6,7 @@ export const ProgramContext = createContext<Program<GameOfLife> | undefined>(
   undefined,
 );
 
-export const useBonkArtProgramContext = () => {
+export const useGameOfLifeProgramContext = () => {
   const context = useContext(ProgramContext);
 
   return context;

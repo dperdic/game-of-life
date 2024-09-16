@@ -10,6 +10,11 @@ import { GameOfLife } from "../target/types/game_of_life";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import fs from "fs";
 import { expect } from "chai";
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
+import { mplBubblegum } from "@metaplex-foundation/mpl-bubblegum";
+import { irysUploader } from "@metaplex-foundation/umi-uploader-irys";
+import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
+import { generateSigner, signerIdentity, sol } from "@metaplex-foundation/umi";
 
 const GRID_SIZE = 32;
 
@@ -99,12 +104,25 @@ describe("game-of-life", () => {
   const keyPair = getKeyPair();
   const deployProvider = getProvider();
 
+  const umi = createUmi(deployProvider.connection.rpcEndpoint, {
+    commitment: "confirmed",
+  })
+    .use(mplTokenMetadata())
+    .use(mplBubblegum())
+    .use(irysUploader());
+
+  const signer = generateSigner(umi);
+
+  umi.use(signerIdentity(signer));
+
   let initialGrid: number[][];
 
   before(async () => {
     console.log("generating grid...");
 
     initialGrid = generateRandomGrid();
+
+    await umi.rpc.airdrop(umi.identity.publicKey, sol(3));
   });
 
   it("Is initialized!", async () => {

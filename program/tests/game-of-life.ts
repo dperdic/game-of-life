@@ -122,7 +122,7 @@ describe("game-of-life", () => {
 
     initialGrid = generateRandomGrid();
 
-    await umi.rpc.airdrop(umi.identity.publicKey, sol(3));
+    await umi.rpc.airdrop(umi.identity.publicKey, sol(5));
   });
 
   it("Is initialized!", async () => {

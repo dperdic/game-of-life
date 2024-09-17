@@ -11,16 +11,29 @@ import { Keypair, PublicKey } from "@solana/web3.js";
 import fs from "fs";
 import { expect } from "chai";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
-import { mplBubblegum } from "@metaplex-foundation/mpl-bubblegum";
+import {
+  fetchMerkleTree,
+  getAssetWithProof,
+  getChangeLogSerializer,
+  getVerifyLeafInstructionDataSerializer,
+  hashLeaf,
+  mplBubblegum,
+  verifyLeaf,
+} from "@metaplex-foundation/mpl-bubblegum";
 import { irysUploader } from "@metaplex-foundation/umi-uploader-irys";
 import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
-import { generateSigner, signerIdentity, sol } from "@metaplex-foundation/umi";
+import {
+  generateSigner,
+  publicKey,
+  signerIdentity,
+  sol,
+} from "@metaplex-foundation/umi";
 
-const GRID_SIZE = 32;
+const BOARD_SIZE = 32;
 
-const getPda = (program: Program<GameOfLife>, pdaSeed: string) => {
+const getPda = (program: Program<GameOfLife>, pdaSeed: PublicKey) => {
   const [address, bumpState] = PublicKey.findProgramAddressSync(
-    [Buffer.from(pdaSeed)],
+    [pdaSeed.toBytes()],
     program.programId,
   );
 
@@ -51,91 +64,101 @@ const confirmTransaction = async (provider: Provider, tx: string) => {
   );
 };
 
-const generateRandomGrid = (): number[][] => {
+const generateRandomBoard = (): number[][] => {
   const rows = [];
 
-  for (let i = 0; i < GRID_SIZE; i++) {
+  for (let i = 0; i < BOARD_SIZE; i++) {
     rows.push(
-      Array.from(Array(GRID_SIZE), () => (Math.random() > 0.7 ? 1 : 0)),
+      Array.from(Array(BOARD_SIZE), () => (Math.random() > 0.7 ? 1 : 0)),
     );
   }
 
   return rows;
 };
 
-const packGrid = (grid: number[][]): number[] => {
-  const packedData = new Uint32Array(32);
+const packBoard = (board: number[][]): number[] => {
+  const packedData = new Uint32Array(BOARD_SIZE);
 
-  for (let row = 0; row < 32; row++) {
+  for (let row = 0; row < BOARD_SIZE; row++) {
     let packedRow = 0;
 
-    for (let col = 0; col < 32; col++) {
-      if (grid[row][col]) {
+    for (let col = 0; col < BOARD_SIZE; col++) {
+      if (board[row][col]) {
         packedRow |= 1 << col;
       }
     }
 
     packedData[row] = packedRow;
   }
+
   return Array.from(packedData);
 };
 
-const unpackGrid = (packedData: number[]): number[][] => {
-  const grid = Array(32)
+const unpackBoard = (packedData: number[]): number[][] => {
+  const board = Array(BOARD_SIZE)
     .fill(null)
-    .map(() => Array(32).fill(false));
+    .map(() => Array(BOARD_SIZE).fill(0));
 
-  for (let row = 0; row < 32; row++) {
+  for (let row = 0; row < BOARD_SIZE; row++) {
     const packedRow = packedData[row];
 
-    for (let col = 0; col < 32; col++) {
-      grid[row][col] = Number((packedRow & (1 << col)) !== 0);
+    for (let col = 0; col < BOARD_SIZE; col++) {
+      board[row][col] = +((packedRow & (1 << col)) !== 0);
     }
   }
-  return grid;
+
+  return board;
 };
 
+// const hashPubkey = (pubkey: PublicKey, salt: string) => {
+//   const combined = pubkey.toBase58() + salt;
+
+//   return createHash("sha256").update(combined, "utf-8").digest("hex");
+// };
+
 describe("game-of-life", () => {
-  // Configure the client to use the local cluster.
   setProvider(AnchorProvider.env());
 
   const program = workspace.GameOfLife as Program<GameOfLife>;
 
   const keyPair = getKeyPair();
   const deployProvider = getProvider();
+  let initialBoard: number[][];
 
-  const umi = createUmi(deployProvider.connection.rpcEndpoint, {
-    commitment: "confirmed",
-  })
-    .use(mplTokenMetadata())
-    .use(mplBubblegum())
-    .use(irysUploader());
+  let nftPubkey: PublicKey;
+  let hashedPubkey: string;
 
-  const signer = generateSigner(umi);
+  // const umi = createUmi(deployProvider.connection.rpcEndpoint, {
+  //   commitment: "confirmed",
+  // })
+  //   .use(mplTokenMetadata())
+  //   .use(mplBubblegum());
 
-  umi.use(signerIdentity(signer));
+  // const asset = await getAssetWithProof(umi, publicKey(""));
 
-  let initialGrid: number[][];
+  // const x = verifyLeaf(umi, {}).sendAndConfirm(umi, { confirm: "" });
 
   before(async () => {
-    console.log("generating grid...");
+    console.log("generating board...");
 
-    initialGrid = generateRandomGrid();
+    initialBoard = generateRandomBoard();
 
-    await umi.rpc.airdrop(umi.identity.publicKey, sol(5));
+    nftPubkey = Keypair.generate().publicKey;
   });
 
   it("Is initialized!", async () => {
-    console.log("storing grid...");
+    console.log("storing board...");
 
-    const packedGrid = packGrid(initialGrid);
+    const packedBoard = packBoard(initialBoard);
 
     const tx = await program.methods
-      .initializeBoard(packedGrid)
+      .initializeBoard(nftPubkey, packedBoard)
       .accounts({
         signer: keyPair.publicKey,
       })
       .rpc();
+
+    const x = program.methods.initializeBoard(nftPubkey, packedBoard);
 
     await confirmTransaction(deployProvider, tx);
 
@@ -143,14 +166,14 @@ describe("game-of-life", () => {
   });
 
   after(async () => {
-    console.log("comparing grids...");
+    console.log("comparing boards...");
 
-    const grid = getPda(program, "grid");
+    const board = getPda(program, nftPubkey);
 
-    const fetchedGrid = await program.account.grid.fetch(grid);
+    const fetchedBoard = await program.account.board.fetch(board);
 
-    const unpackedGrid = unpackGrid(fetchedGrid.packedGrid);
+    const unpackedBoard = unpackBoard(fetchedBoard.packedBoard);
 
-    expect(unpackedGrid).to.deep.equal(initialGrid);
+    expect(unpackedBoard).to.deep.equal(initialBoard);
   });
 });

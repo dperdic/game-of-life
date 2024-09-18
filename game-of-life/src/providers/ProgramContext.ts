@@ -8,8 +8,8 @@ export const ProgramContext = createContext<Program<GameOfLife> | undefined>(
   undefined,
 );
 
-export const useGameOfLifeProgramContext = () => {
-  const context = useContext(ProgramContext);
+export const useProgramContext = () => {
+  const program = useContext(ProgramContext);
 
-  return context;
+  return program;
 };

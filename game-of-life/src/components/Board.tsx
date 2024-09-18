@@ -41,7 +41,7 @@ export default function Board() {
   const [speed, setSpeed] = useState(INITIAL_SPEED);
   const speedRef = useRef(speed.milliseconds);
 
-  const { playable } = useBoardStateStore();
+  const { playable, grid, setGrid } = useBoardStateStore();
 
   const { inProgress, setInProgress } = useTransactionStateStore();
 
@@ -54,13 +54,16 @@ export default function Board() {
   }, [running]);
 
   const handleNewGame = async () => {
+    setInProgress(true);
     if (!program) {
+      setInProgress(false);
       return;
     }
 
     const cNftId = await mintToCollection("Game test collection", "$GOL", "");
 
     if (!cNftId) {
+      setInProgress(false);
       return;
     }
 
@@ -72,10 +75,22 @@ export default function Board() {
         .rpc();
 
       const confirmation = await confirmTransaction(tx);
+
+      if (confirmation.value.err) {
+        console.error(confirmation.value.err);
+        toast.error("An error occured while confirming transaction");
+
+        setInProgress(false);
+        return;
+      }
+
+      setGrid;
     } catch (error) {
       console.error(error);
       toast.error("An error occured while initializing board");
     }
+
+    setInProgress(false);
   };
 
   const runSimulation = useCallback(() => {
@@ -202,20 +217,20 @@ export default function Board() {
               Reset
             </button>
 
-            <button
+            {/* <button
               type="button"
               className="btn btn-md btn-white"
               onClick={() => reset(true)}
             >
               Randomize
-            </button>
+            </button> */}
 
             <div className="flex flex-row gap-3">
               <button
                 type="button"
                 className="btn btn-sm btn-white"
-                onClick={() => modifySpeed(false)}
                 disabled={speed.value <= MIN_SPEED}
+                onClick={() => modifySpeed(false)}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -236,8 +251,8 @@ export default function Board() {
               <button
                 type="button"
                 className="btn btn-sm btn-white"
-                onClick={() => modifySpeed(true)}
                 disabled={speed.value >= MAX_SPEED}
+                onClick={() => modifySpeed(true)}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -255,15 +270,8 @@ export default function Board() {
             <button
               type="button"
               className="btn btn-md btn-black"
-              onClick={() => {
-                setRunning((isRunning) => !isRunning);
-
-                if (!running) {
-                  runningRef.current = true;
-
-                  runSimulation();
-                }
-              }}
+              onClick={handleNewGame}
+              disabled={inProgress}
             >
               New game
             </button>

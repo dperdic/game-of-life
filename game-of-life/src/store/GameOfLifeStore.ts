@@ -1,3 +1,4 @@
+import { ScreenType } from "@/utils/constants";
 import { create } from "zustand";
 
 interface TransactionStateStore {
@@ -11,3 +12,13 @@ export const useTransactionStateStore = create<TransactionStateStore>(
     setInProgress: (inProgress) => set(() => ({ inProgress: inProgress })),
   }),
 );
+
+interface ScreenStateStore {
+  screen: ScreenType;
+  setScreen: (newScreen: ScreenType) => void;
+}
+
+export const useScreenStateStore = create<ScreenStateStore>((set) => ({
+  screen: ScreenType.Menu,
+  setScreen: (newScreen) => set(() => ({ screen: newScreen })),
+}));

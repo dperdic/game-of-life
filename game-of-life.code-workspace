@@ -9,6 +9,10 @@
       "name": "app"
     },
     {
+      "path": "game-of-life",
+      "name": "next"
+    },
+    {
       "path": "program",
       "name": "program"
     },

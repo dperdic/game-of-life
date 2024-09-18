@@ -14,19 +14,89 @@ export type GameOfLife = {
   },
   "instructions": [
     {
-      "name": "initialize",
+      "name": "initializeBoard",
       "discriminator": [
-        175,
-        175,
-        109,
-        31,
-        13,
-        152,
-        155,
-        237
+        146,
+        47,
+        165,
+        250,
+        246,
+        28,
+        104,
+        227
       ],
-      "accounts": [],
-      "args": []
+      "accounts": [
+        {
+          "name": "board",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "nftPubkey"
+              }
+            ]
+          }
+        },
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "nftPubkey",
+          "type": "pubkey"
+        },
+        {
+          "name": "packedBoard",
+          "type": {
+            "array": [
+              "u32",
+              32
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "board",
+      "discriminator": [
+        79,
+        48,
+        160,
+        63,
+        153,
+        132,
+        240,
+        56
+      ]
+    }
+  ],
+  "types": [
+    {
+      "name": "board",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "packedBoard",
+            "type": {
+              "array": [
+                "u32",
+                32
+              ]
+            }
+          }
+        ]
+      }
     }
   ]
 };

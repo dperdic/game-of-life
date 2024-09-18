@@ -275,6 +275,15 @@ export default function Board() {
             >
               Randomize
             </button>
+
+            <button
+              type="button"
+              className="btn btn-md btn-white"
+              onClick={() => setLocalGrid(generateEmptyGrid())}
+              disabled={inProgress}
+            >
+              Clear
+            </button>
           </>
         )}
       </div>

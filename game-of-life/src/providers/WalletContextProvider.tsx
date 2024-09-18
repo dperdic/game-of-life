@@ -7,7 +7,7 @@ import {
 } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { Cluster, clusterApiUrl } from "@solana/web3.js";
-import "./WalletContextProvider.css";
+import "@/providers/WalletContextProvider.css";
 
 export default function WalletContextProvider({
   children,

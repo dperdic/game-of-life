@@ -1,7 +1,7 @@
 "use client";
 
-import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { ReactNode, useState, useEffect } from "react";
+import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import {
   Program,
   Provider,
@@ -9,9 +9,9 @@ import {
   AnchorProvider,
   setProvider,
 } from "@coral-xyz/anchor";
-import { ProgramContext } from "./ProgramContext";
-import { GameOfLife } from "../idls/game_of_life";
-import idl from "../idls/game_of_life.json";
+import { ProgramContext } from "@/providers/ProgramContext";
+import { GameOfLife } from "@/idls/game_of_life";
+import idl from "@/idls/game_of_life.json";
 
 export default function ProgramContextProvider({
   children,

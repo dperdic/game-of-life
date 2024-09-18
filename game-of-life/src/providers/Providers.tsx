@@ -3,8 +3,9 @@
 import { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
-import ProgramContextProvider from "./ProgramContextProvider";
+import ProgramContextProvider from "@/providers/ProgramContextProvider";
 import ToastProvider from "@/providers/ToastProvider";
+import UmiContextProvider from "@/providers/UmiContextProvider";
 
 const queryClient = new QueryClient();
 
@@ -17,9 +18,11 @@ export default function Providers({ children }: { children: ReactNode }) {
   return (
     <WalletContextProviderDynamic>
       <ProgramContextProvider>
-        <QueryClientProvider client={queryClient}>
-          <ToastProvider>{children}</ToastProvider>
-        </QueryClientProvider>
+        <UmiContextProvider>
+          <QueryClientProvider client={queryClient}>
+            <ToastProvider>{children}</ToastProvider>
+          </QueryClientProvider>
+        </UmiContextProvider>
       </ProgramContextProvider>
     </WalletContextProviderDynamic>
   );

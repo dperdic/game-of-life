@@ -1,61 +1,49 @@
 "use client";
 
+import useMinter from "@/hooks/useMinter";
+import useUmi from "@/hooks/useUmi";
+import { useProgramContext } from "@/providers/ProgramContext";
+import {
+  useBoardStateStore,
+  useTransactionStateStore,
+} from "@/store/gameOfLifeStore";
+import {
+  GRID_SIZE,
+  INITIAL_SPEED,
+  SURROUNDING_FIELD_COORDS,
+  MIN_SPEED,
+  MAX_SPEED,
+} from "@/utils/constants";
+import {
+  confirmTransaction,
+  generateEmptyGrid,
+  generateRandomGrid,
+  packBoard,
+} from "@/utils/functions";
+import { PublicKey } from "@solana/web3.js";
 import { produce } from "immer";
 import { useCallback, useEffect, useRef, useState } from "react";
-
-const gridSize = 32;
-const minSpeed = 0.5;
-const maxSpeed = 16;
-const initialSpeed = { value: 1, milliseconds: 1000 };
-const surroundingFieldCoords: number[][] = [
-  [-1, 0], // top
-  [1, 0], // bottom
-  [0, -1], // left
-  [0, 1], // right
-  [-1, 1], // top left
-  [1, -1], // top right
-  [-1, -1], // bottom left
-  [1, 1], // bottom right
-];
-
-// push zeroes in all fields
-const generateEmptyGrid = () => {
-  const rows = [];
-
-  for (let i = 0; i < gridSize; i++) {
-    rows.push(Array.from(Array(gridSize), () => 0));
-  }
-
-  return rows;
-};
-
-const generateRandomGrid = () => {
-  const rows = [];
-
-  for (let i = 0; i < gridSize; i++) {
-    rows.push(Array.from(Array(gridSize), () => (Math.random() > 0.7 ? 1 : 0)));
-  }
-
-  return rows;
-};
-
-function getRandomColor() {
-  // Generate a random number between 0 and 16777215 (hex color range)
-  const randomColor = Math.floor(Math.random() * 16777215).toString(16);
-
-  // Ensure the color is always 6 digits by padding with leading zeros if necessary
-  return `#${randomColor.padStart(6, "0")}`;
-}
+import { toast } from "react-toastify";
 
 export default function Board() {
+  const { dasApiRpc } = useUmi();
+  const { mintToCollection } = useMinter();
+  const program = useProgramContext();
+
   const [generation, setGeneration] = useState<number>(0);
-  const [grid, setGrid] = useState<number[][]>(() => generateEmptyGrid());
+  const [localGrid, setLocalGrid] = useState<number[][]>(() =>
+    generateEmptyGrid(),
+  );
 
   const [running, setRunning] = useState<boolean>(false);
   const runningRef = useRef(running);
 
-  const [speed, setSpeed] = useState(initialSpeed);
+  const [speed, setSpeed] = useState(INITIAL_SPEED);
   const speedRef = useRef(speed.milliseconds);
+
+  const { playable } = useBoardStateStore();
+
+  const { inProgress, setInProgress } = useTransactionStateStore();
 
   useEffect(() => {
     speedRef.current = speed.milliseconds;
@@ -65,6 +53,31 @@ export default function Board() {
     runningRef.current = running;
   }, [running]);
 
+  const handleNewGame = async () => {
+    if (!program) {
+      return;
+    }
+
+    const cNftId = await mintToCollection("Game test collection", "$GOL", "");
+
+    if (!cNftId) {
+      return;
+    }
+
+    const packedBoard = packBoard(localGrid);
+
+    try {
+      const tx = await program.methods
+        .initializeBoard(new PublicKey(cNftId), packedBoard)
+        .rpc();
+
+      const confirmation = await confirmTransaction(tx);
+    } catch (error) {
+      console.error(error);
+      toast.error("An error occured while initializing board");
+    }
+  };
+
   const runSimulation = useCallback(() => {
     if (!runningRef.current) {
       return;
@@ -72,21 +85,21 @@ export default function Board() {
 
     setGeneration((currentGeneration) => currentGeneration + 1);
 
-    setGrid((currentGrid) => {
+    setLocalGrid((currentGrid) => {
       return produce(currentGrid, (newGrid) => {
-        for (let i = 0; i < gridSize; i++) {
-          for (let j = 0; j < gridSize; j++) {
+        for (let i = 0; i < GRID_SIZE; i++) {
+          for (let j = 0; j < GRID_SIZE; j++) {
             let neighbors = 0;
 
-            surroundingFieldCoords.forEach(([x, y]) => {
+            SURROUNDING_FIELD_COORDS.forEach(([x, y]) => {
               const newI = i + x;
               const newJ = j + y;
 
               if (
                 newI >= 0 &&
-                newI < gridSize &&
+                newI < GRID_SIZE &&
                 newJ >= 0 &&
-                newJ < gridSize
+                newJ < GRID_SIZE
               ) {
                 neighbors += currentGrid[newI][newJ];
               }
@@ -117,9 +130,11 @@ export default function Board() {
   const reset = (randomize: boolean) => {
     setRunning(false);
     setGeneration(0);
-    setSpeed(initialSpeed);
+    setSpeed(INITIAL_SPEED);
 
-    setGrid(() => (randomize ? generateRandomGrid() : generateEmptyGrid()));
+    setLocalGrid(() =>
+      randomize ? generateRandomGrid() : generateEmptyGrid(),
+    );
   };
 
   return (
@@ -130,23 +145,27 @@ export default function Board() {
         <div
           className="grid"
           style={{
-            gridTemplateColumns: `repeat(${gridSize}, 0fr)`,
+            gridTemplateColumns: `repeat(${GRID_SIZE}, 0fr)`,
           }}
         >
-          {grid.map((row, i) =>
+          {localGrid.map((row, i) =>
             row.map((_col, j) => (
               <div
                 key={`${i}-${j}`}
                 onClick={() => {
-                  const newGrid = produce(grid, (gridCopy) => {
-                    gridCopy[i][j] = grid[i][j] ? 0 : 1;
+                  if (playable) {
+                    return;
+                  }
+
+                  const newGrid = produce(localGrid, (gridCopy) => {
+                    gridCopy[i][j] = localGrid[i][j] ? 0 : 1;
                   });
 
-                  setGrid(newGrid);
+                  setLocalGrid(newGrid);
                 }}
                 className="size-4 border border-gray-300"
                 style={{
-                  backgroundColor: grid[i][j] ? "black" : "white",
+                  backgroundColor: localGrid[i][j] ? "black" : "white",
                 }}
               ></div>
             )),
@@ -155,77 +174,101 @@ export default function Board() {
       </div>
 
       <div className="flex flex-row justify-center gap-3">
-        <button
-          type="button"
-          className="btn btn-md btn-black"
-          onClick={() => {
-            setRunning((isRunning) => !isRunning);
+        {playable ? (
+          <>
+            <button
+              type="button"
+              className="btn btn-md btn-black"
+              disabled={inProgress}
+              onClick={() => {
+                setRunning((isRunning) => !isRunning);
 
-            if (!running) {
-              runningRef.current = true;
+                if (!running) {
+                  runningRef.current = true;
 
-              runSimulation();
-            }
-          }}
-        >
-          {running ? "Stop" : "Start"}
-        </button>
-
-        <button
-          type="button"
-          className="btn btn-md btn-white"
-          onClick={() => reset(false)}
-        >
-          Reset
-        </button>
-
-        <button
-          type="button"
-          className="btn btn-md btn-white"
-          onClick={() => reset(true)}
-        >
-          Randomize
-        </button>
-
-        <div className="flex flex-row gap-3">
-          <button
-            type="button"
-            className="btn btn-sm btn-white"
-            onClick={() => modifySpeed(false)}
-            disabled={speed.value <= minSpeed}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className="size-5"
+                  runSimulation();
+                }
+              }}
             >
-              <path
-                fillRule="evenodd"
-                d="M4 10a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H4.75A.75.75 0 0 1 4 10Z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </button>
+              {running ? "Stop" : "Start"}
+            </button>
 
-          <span className="py-3">{speed.value}x</span>
-
-          <button
-            type="button"
-            className="btn btn-sm btn-white"
-            onClick={() => modifySpeed(true)}
-            disabled={speed.value >= maxSpeed}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className="size-5"
+            <button
+              type="button"
+              className="btn btn-md btn-white"
+              disabled={inProgress}
+              onClick={() => reset(false)}
             >
-              <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
-            </svg>
-          </button>
-        </div>
+              Reset
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-md btn-white"
+              onClick={() => reset(true)}
+            >
+              Randomize
+            </button>
+
+            <div className="flex flex-row gap-3">
+              <button
+                type="button"
+                className="btn btn-sm btn-white"
+                onClick={() => modifySpeed(false)}
+                disabled={speed.value <= MIN_SPEED}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  className="size-5"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M4 10a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H4.75A.75.75 0 0 1 4 10Z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+
+              <span className="py-3">{speed.value}x</span>
+
+              <button
+                type="button"
+                className="btn btn-sm btn-white"
+                onClick={() => modifySpeed(true)}
+                disabled={speed.value >= MAX_SPEED}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  className="size-5"
+                >
+                  <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+                </svg>
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              className="btn btn-md btn-black"
+              onClick={() => {
+                setRunning((isRunning) => !isRunning);
+
+                if (!running) {
+                  runningRef.current = true;
+
+                  runSimulation();
+                }
+              }}
+            >
+              New game
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

@@ -41,7 +41,7 @@ export default function Board() {
   const [speed, setSpeed] = useState(INITIAL_SPEED);
   const speedRef = useRef(speed.milliseconds);
 
-  const { playable, grid, setGrid } = useBoardStateStore();
+  const { playable, grid, setGrid, setPlayable } = useBoardStateStore();
 
   const { inProgress, setInProgress } = useTransactionStateStore();
 
@@ -84,7 +84,8 @@ export default function Board() {
         return;
       }
 
-      setGrid;
+      setGrid(localGrid);
+      setPlayable(true);
     } catch (error) {
       console.error(error);
       toast.error("An error occured while initializing board");
@@ -147,9 +148,7 @@ export default function Board() {
     setGeneration(0);
     setSpeed(INITIAL_SPEED);
 
-    setLocalGrid(() =>
-      randomize ? generateRandomGrid() : generateEmptyGrid(),
-    );
+    setLocalGrid(() => (randomize ? generateRandomGrid() : grid));
   };
 
   return (
@@ -217,14 +216,6 @@ export default function Board() {
               Reset
             </button>
 
-            {/* <button
-              type="button"
-              className="btn btn-md btn-white"
-              onClick={() => reset(true)}
-            >
-              Randomize
-            </button> */}
-
             <div className="flex flex-row gap-3">
               <button
                 type="button"
@@ -274,6 +265,15 @@ export default function Board() {
               disabled={inProgress}
             >
               New game
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-md btn-white"
+              onClick={() => reset(true)}
+              disabled={inProgress}
+            >
+              Randomize
             </button>
           </>
         )}

@@ -78,7 +78,7 @@ export default function Board() {
 
       if (confirmation.value.err) {
         console.error(confirmation.value.err);
-        toast.error("An error occured while confirming transaction");
+        toast.error("An error occured while confirming the transaction");
 
         setInProgress(false);
         return;

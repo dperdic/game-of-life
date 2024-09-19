@@ -263,7 +263,7 @@ export default function Board() {
           </>
         ) : (
           <div className="grid grid-cols-1 gap-3">
-            <div className="flex flex-row gap-3">
+            <div className="flex flex-row justify-center gap-3">
               <input
                 type="text"
                 placeholder="Name"
@@ -284,7 +284,7 @@ export default function Board() {
               </button>
             </div>
 
-            <div className="flex flex-row gap-3">
+            <div className="flex flex-row justify-center gap-3">
               <button
                 type="button"
                 className="btn btn-md btn-white"

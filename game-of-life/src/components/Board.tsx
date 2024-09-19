@@ -6,7 +6,7 @@ import { useProgramContext } from "@/providers/ProgramContext";
 import {
   useBoardStateStore,
   useTransactionStateStore,
-} from "@/store/gameOfLifeStore";
+} from "@/app/_store/gameOfLifeStore";
 import {
   GRID_SIZE,
   INITIAL_SPEED,

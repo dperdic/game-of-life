@@ -1,6 +1,6 @@
 "use client";
 
-import { useScreenStateStore } from "../store/gameOfLifeStore";
+import { useScreenStateStore } from "@/app/_store/gameOfLifeStore";
 import { ScreenType } from "@/utils/constants";
 import Board from "@/components/Board";
 import Menu from "@/components/Menu";

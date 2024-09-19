@@ -33,8 +33,8 @@ export default function useMinter() {
           collectionMint: publicKey(collectionAddress),
           metadata: {
             name: name,
-            symbol: symbol,
-            uri: metadataUrl,
+            symbol: process.env.NEXT_PUBLIC_CNFT_SYMBOL,
+            uri: process.env.NETX_PUBLIC_METADATA_URL,
             sellerFeeBasisPoints: 10000,
             isMutable: true,
             collection: { key: publicKey(collectionAddress), verified: true },

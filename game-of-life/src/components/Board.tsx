@@ -31,13 +31,13 @@ export default function Board() {
   const program = useProgramContext();
 
   const [generation, setGeneration] = useState<number>(0);
+  const [localName, setLocalName] = useState<string>();
   const [localGrid, setLocalGrid] = useState<number[][]>(() =>
     generateEmptyGrid(),
   );
 
   const [running, setRunning] = useState<boolean>(false);
   const runningRef = useRef(running);
-
   const [speed, setSpeed] = useState(INITIAL_SPEED);
   const speedRef = useRef(speed.milliseconds);
 
@@ -55,12 +55,18 @@ export default function Board() {
 
   const handleNewGame = async () => {
     setInProgress(true);
+
     if (!program) {
       setInProgress(false);
       return;
     }
 
-    const cNftId = await mintToCollection("Game test collection", "$GOL", "");
+    if (!localName) {
+      setInProgress(false);
+      return;
+    }
+
+    const cNftId = await mintToCollection(localName, "GoL", "");
 
     if (!cNftId) {
       setInProgress(false);
@@ -146,7 +152,6 @@ export default function Board() {
   const reset = (randomize: boolean) => {
     setRunning(false);
     setGeneration(0);
-    setSpeed(INITIAL_SPEED);
 
     setLocalGrid(() => (randomize ? generateRandomGrid() : grid));
   };
@@ -257,34 +262,48 @@ export default function Board() {
             </div>
           </>
         ) : (
-          <>
-            <button
-              type="button"
-              className="btn btn-md btn-black"
-              onClick={handleNewGame}
-              disabled={inProgress}
-            >
-              New game
-            </button>
+          <div className="grid grid-cols-1 gap-3">
+            <div className="flex flex-row gap-3">
+              <input
+                type="text"
+                placeholder="Name"
+                value={localName}
+                maxLength={10}
+                onChange={(event) => {
+                  setLocalName(event.target.value);
+                }}
+                className="block rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-gray-800 focus:outline-none focus:ring-gray-800 disabled:bg-gray-50 disabled:text-gray-500 sm:text-sm"
+              />
+              <button
+                type="button"
+                className="btn btn-md btn-black"
+                onClick={handleNewGame}
+                disabled={inProgress || !localName}
+              >
+                New game
+              </button>
+            </div>
 
-            <button
-              type="button"
-              className="btn btn-md btn-white"
-              onClick={() => reset(true)}
-              disabled={inProgress}
-            >
-              Randomize
-            </button>
+            <div className="flex flex-row gap-3">
+              <button
+                type="button"
+                className="btn btn-md btn-white"
+                onClick={() => reset(true)}
+                disabled={inProgress}
+              >
+                Randomize
+              </button>
 
-            <button
-              type="button"
-              className="btn btn-md btn-white"
-              onClick={() => setLocalGrid(generateEmptyGrid())}
-              disabled={inProgress}
-            >
-              Clear
-            </button>
-          </>
+              <button
+                type="button"
+                className="btn btn-md btn-white"
+                onClick={() => setLocalGrid(generateEmptyGrid())}
+                disabled={inProgress}
+              >
+                Clear
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>

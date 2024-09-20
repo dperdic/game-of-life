@@ -31,15 +31,15 @@ const providers: Provider[] = [
           return null;
         }
 
-        return {
-          id: signinMessage.address,
-        };
-
         const csrfToken = await getCsrfToken({ req: { ...req, body: null } });
 
         if (signinMessage.nonce !== csrfToken) {
           return null;
         }
+
+        return {
+          id: signinMessage.address,
+        };
 
         const validationResult = await signinMessage.validate(
           credentials?.signature || "",

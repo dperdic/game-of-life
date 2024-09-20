@@ -21,11 +21,12 @@ const providers: Provider[] = [
 
     async authorize(credentials, req) {
       try {
+        console.log("something new");
+        console.log("credentials: ", credentials?.message);
+
         const signinMessage = new SigninMessage(
           JSON.parse(credentials?.message || "{}"),
         );
-
-        console.log("signinMessage: ", signinMessage);
 
         const nextAuthUrl = new URL(process.env.AUTH_URL);
 

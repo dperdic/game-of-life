@@ -77,24 +77,23 @@ const generateRandomBoard = (): number[][] => {
   return rows;
 };
 
-// const packBoard = (board: number[][]) => {
-//   const packedData = new Uint32Array(BOARD_SIZE);
+const packBoard = (board: number[][]) => {
+  const packedData = new Uint32Array(BOARD_SIZE);
 
-//   for (let row = 0; row < BOARD_SIZE; row++) {
-//     let packedRow = 0;
+  for (let row = 0; row < BOARD_SIZE; row++) {
+    let packedRow = 0;
 
-//     for (let col = 0; col < BOARD_SIZE; col++) {
-//       if (board[row][col]) {
-//         packedRow |= 1 << col;
-//       }
-//     }
+    for (let col = 0; col < BOARD_SIZE; col++) {
+      if (board[row][col]) {
+        packedRow |= 1 << col;
+      }
+    }
 
-//     packedData[row] = packedRow;
-//   }
+    packedData[row] = packedRow;
+  }
 
-//   return packedData;
-//   return Array.from(packedData);
-// };
+  return packedData;
+};
 
 const unpackBoard = (packedData: number[]): number[][] => {
   const board = Array(BOARD_SIZE)
@@ -150,21 +149,7 @@ export const packAndEncryptBoard = (
   board: number[][],
   secret: string,
 ): number[] => {
-  const packedData = new Uint32Array(BOARD_SIZE);
-
-  for (let row = 0; row < BOARD_SIZE; row++) {
-    let packedRow = 0;
-
-    for (let col = 0; col < BOARD_SIZE; col++) {
-      if (board[row][col]) {
-        packedRow |= 1 << col;
-      }
-    }
-
-    packedData[row] = packedRow;
-  }
-
-  console.log(packedData);
+  const packedData = packBoard(board);
 
   const dataToEncrypt = new Uint8Array(packedData.buffer);
 
@@ -184,19 +169,7 @@ export const decryptAndUnpackBoard = (
 
   const packedData = Array.from(new Uint32Array(decryptedData.buffer).slice(8));
 
-  const board = Array(BOARD_SIZE)
-    .fill(null)
-    .map(() => Array(BOARD_SIZE).fill(0));
-
-  for (let row = 0; row < BOARD_SIZE; row++) {
-    const packedRow = packedData[row];
-
-    for (let col = 0; col < BOARD_SIZE; col++) {
-      board[row][col] = +((packedRow & (1 << col)) !== 0);
-    }
-  }
-
-  return board;
+  return unpackBoard(packedData);
 };
 
 describe("encryption tests", () => {
@@ -211,8 +184,6 @@ describe("encryption tests", () => {
       randomBoard,
       `${publicKey}${secret}`,
     );
-
-    console.log(packedAndEncrypted.length);
 
     const unpackedAndDecrypted = decryptAndUnpackBoard(
       packedAndEncrypted,

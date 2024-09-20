@@ -22,7 +22,7 @@ export class SigninMessage {
   }
 
   prepare() {
-    return `${this.statement}\n\n${this.domain}\n\n${this.address}\n\n${this.nonce}`;
+    return `${this.statement}\n\nDomain: ${this.domain}\n\nWallet address: ${this.address}\n\nNonce: ${this.nonce}`;
   }
 
   async validate(signature: string) {

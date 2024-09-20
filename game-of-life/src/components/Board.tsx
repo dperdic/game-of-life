@@ -18,17 +18,23 @@ import {
   confirmTransaction,
   generateEmptyGrid,
   generateRandomGrid,
-  packBoard,
+  getPda,
 } from "@/utils/functions";
 import { PublicKey } from "@solana/web3.js";
 import { produce } from "immer";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
+import { useSession } from "next-auth/react";
+import { packBoard, unpackBoard } from "@/actions/BoardActions";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 export default function Board() {
+  const { status } = useSession();
+
   const { dasApiRpc } = useUmi();
   const { mintToCollection } = useMinter();
   const program = useProgramContext();
+  const { publicKey } = useWallet();
 
   const [generation, setGeneration] = useState<number>(0);
   const [localName, setLocalName] = useState<string>("");
@@ -66,18 +72,20 @@ export default function Board() {
       return;
     }
 
-    const cNftId = await mintToCollection(localName, "GoL", "");
+    const cNftId = await mintToCollection(localName);
 
     if (!cNftId) {
       setInProgress(false);
       return;
     }
 
-    const packedBoard = packBoard(localGrid);
+    const newBoard = await packBoard(cNftId, localGrid);
+
+    console.log("packed board: ", newBoard);
 
     try {
       const tx = await program.methods
-        .initializeBoard(new PublicKey(cNftId), packedBoard)
+        .initializeBoard(new PublicKey(cNftId), newBoard)
         .rpc();
 
       const confirmation = await confirmTransaction(tx);
@@ -91,6 +99,21 @@ export default function Board() {
       }
 
       setGrid(localGrid);
+
+      const pda = getPda(program, new PublicKey(cNftId));
+
+      const { packedBoard } = await program.account.board.fetch(pda);
+
+      console.log("fetched board: ", packedBoard);
+
+      const decryptedBoard = await unpackBoard(
+        publicKey?.toBase58()!,
+        cNftId,
+        packedBoard,
+      );
+
+      console.log(decryptedBoard);
+
       setPlayable(true);
     } catch (error) {
       console.error(error);
@@ -158,154 +181,168 @@ export default function Board() {
 
   return (
     <div className="flex flex-col justify-center gap-4 overflow-hidden overflow-x-auto rounded-lg border bg-white p-4 shadow">
-      <h3 className="text-center font-semibold">Generation {generation}</h3>
+      {status !== "authenticated" ? (
+        <h3 className="text-xl font-semibold">Access denied</h3>
+      ) : (
+        <>
+          <h3 className="text-center font-semibold">Generation {generation}</h3>
 
-      <div className="flex justify-center">
-        <div
-          className="grid"
-          style={{
-            gridTemplateColumns: `repeat(${GRID_SIZE}, 0fr)`,
-          }}
-        >
-          {localGrid.map((row, i) =>
-            row.map((_col, j) => (
-              <div
-                key={`${i}-${j}`}
-                onClick={() => {
-                  if (playable) {
-                    return;
-                  }
-
-                  const newGrid = produce(localGrid, (gridCopy) => {
-                    gridCopy[i][j] = localGrid[i][j] ? 0 : 1;
-                  });
-
-                  setLocalGrid(newGrid);
-                }}
-                className="size-4 border border-gray-300"
-                style={{
-                  backgroundColor: localGrid[i][j] ? "black" : "white",
-                }}
-              ></div>
-            )),
-          )}
-        </div>
-      </div>
-
-      <div className="flex flex-row justify-center gap-3">
-        {playable ? (
-          <>
-            <button
-              type="button"
-              className="btn btn-md btn-black"
-              disabled={inProgress}
-              onClick={() => {
-                setRunning((isRunning) => !isRunning);
-
-                if (!running) {
-                  runningRef.current = true;
-
-                  runSimulation();
-                }
+          <div className="flex justify-center">
+            <div
+              className="grid"
+              style={{
+                gridTemplateColumns: `repeat(${GRID_SIZE}, 0fr)`,
               }}
             >
-              {running ? "Stop" : "Start"}
-            </button>
+              {localGrid.map((row, i) =>
+                row.map((_col, j) => (
+                  <div
+                    key={`${i}-${j}`}
+                    onClick={() => {
+                      if (playable) {
+                        return;
+                      }
 
-            <button
-              type="button"
-              className="btn btn-md btn-white"
-              disabled={inProgress}
-              onClick={() => reset(false)}
-            >
-              Reset
-            </button>
+                      const newGrid = produce(localGrid, (gridCopy) => {
+                        gridCopy[i][j] = localGrid[i][j] ? 0 : 1;
+                      });
 
-            <div className="flex flex-row gap-3">
-              <button
-                type="button"
-                className="btn btn-sm btn-white"
-                disabled={speed.value <= MIN_SPEED}
-                onClick={() => modifySpeed(false)}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  className="size-5"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M4 10a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H4.75A.75.75 0 0 1 4 10Z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
-
-              <span className="py-3">{speed.value}x</span>
-
-              <button
-                type="button"
-                className="btn btn-sm btn-white"
-                disabled={speed.value >= MAX_SPEED}
-                onClick={() => modifySpeed(true)}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  className="size-5"
-                >
-                  <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
-                </svg>
-              </button>
-            </div>
-          </>
-        ) : (
-          <div className="grid grid-cols-1 gap-3">
-            <div className="flex flex-row justify-center gap-3">
-              <input
-                type="text"
-                placeholder="Name"
-                value={localName}
-                maxLength={10}
-                onChange={(event) => {
-                  setLocalName(event.target.value);
-                }}
-                className="block rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-gray-800 focus:outline-none focus:ring-gray-800 disabled:bg-gray-50 disabled:text-gray-500 sm:text-sm"
-              />
-              <button
-                type="button"
-                className="btn btn-md btn-black"
-                onClick={handleNewGame}
-                disabled={inProgress || !localName}
-              >
-                New game
-              </button>
-            </div>
-
-            <div className="flex flex-row justify-center gap-3">
-              <button
-                type="button"
-                className="btn btn-md btn-white"
-                onClick={() => reset(true)}
-                disabled={inProgress}
-              >
-                Randomize
-              </button>
-
-              <button
-                type="button"
-                className="btn btn-md btn-white"
-                onClick={() => setLocalGrid(generateEmptyGrid())}
-                disabled={inProgress}
-              >
-                Clear
-              </button>
+                      setLocalGrid(newGrid);
+                    }}
+                    className="size-4 border border-gray-300"
+                    style={{
+                      backgroundColor: localGrid[i][j] ? "black" : "white",
+                    }}
+                  ></div>
+                )),
+              )}
             </div>
           </div>
-        )}
-      </div>
+
+          <div className="flex flex-row justify-center gap-3">
+            {playable ? (
+              <>
+                <button
+                  type="button"
+                  className="btn btn-md btn-black"
+                  disabled={inProgress}
+                  onClick={() => {
+                    setRunning((isRunning) => !isRunning);
+
+                    if (!running) {
+                      runningRef.current = true;
+
+                      runSimulation();
+                    }
+                  }}
+                >
+                  {running ? "Stop" : "Start"}
+                </button>
+
+                <button
+                  type="button"
+                  className="btn btn-md btn-white"
+                  disabled={inProgress}
+                  onClick={() => reset(false)}
+                >
+                  Reset
+                </button>
+
+                <div className="flex flex-row gap-3">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-white"
+                    disabled={speed.value <= MIN_SPEED}
+                    onClick={() => modifySpeed(false)}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="size-5"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M4 10a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H4.75A.75.75 0 0 1 4 10Z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
+
+                  <span className="py-3">{speed.value}x</span>
+
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-white"
+                    disabled={speed.value >= MAX_SPEED}
+                    onClick={() => modifySpeed(true)}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="size-5"
+                    >
+                      <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+                    </svg>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="grid grid-cols-1 gap-3">
+                <div className="flex flex-row justify-center gap-3">
+                  <input
+                    type="text"
+                    placeholder="Name"
+                    value={localName}
+                    maxLength={10}
+                    onChange={(event) => {
+                      setLocalName(event.target.value);
+                    }}
+                    className="block rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-gray-800 focus:outline-none focus:ring-gray-800 disabled:bg-gray-50 disabled:text-gray-500 sm:text-sm"
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-md btn-black"
+                    onClick={handleNewGame}
+                    disabled={inProgress || !localName}
+                  >
+                    New game
+                  </button>
+
+                  {/* <button
+                    type="button"
+                    className="btn btn-md btn-black"
+                    onClick={async () => await placeholder()}
+                  >
+                    Test
+                  </button> */}
+                </div>
+
+                <div className="flex flex-row justify-center gap-3">
+                  <button
+                    type="button"
+                    className="btn btn-md btn-white"
+                    onClick={() => reset(true)}
+                    disabled={inProgress}
+                  >
+                    Randomize
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-md btn-white"
+                    onClick={() => setLocalGrid(generateEmptyGrid())}
+                    disabled={inProgress}
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

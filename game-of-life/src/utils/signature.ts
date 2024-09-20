@@ -17,17 +17,12 @@ export class SigninMessage {
   constructor({ domain, address, nonce, statement }: SignMessage) {
     this.domain = domain;
     this.address = address;
-    this.nonce = nonce;
     this.statement = statement;
+    this.nonce = nonce;
   }
 
   prepare() {
-    return JSON.stringify({
-      domain: this.domain,
-      address: this.address,
-      nonce: this.nonce,
-      statement: this.statement,
-    });
+    return `${this.statement}\n\n${this.domain}\n\n${this.address}\n\n${this.nonce}`;
   }
 
   async validate(signature: string) {

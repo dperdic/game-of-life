@@ -1,5 +1,6 @@
 "use client";
 
+import { useTransactionStateStore } from "@/app/_store/gameOfLifeStore";
 import { SigninMessage } from "@/utils/signature";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -10,71 +11,77 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 
 export default function Header() {
+  const { inProgress, setInProgress } = useTransactionStateStore();
   const { data: session, status } = useSession();
-  const { connected, publicKey, signMessage, disconnect } = useWallet();
+  const { connected, publicKey, signMessage, disconnect, wallet } = useWallet();
   const [currentPublicKey, setCurrentPublicKey] = useState<PublicKey | null>(
     null,
   );
   const { setVisible } = useWalletModal();
 
   const handleSignOut = useCallback(async () => {
-    await signOut({ redirect: false });
-
     await disconnect();
+
+    await signOut({ redirect: false });
   }, [disconnect]);
 
   const handleSignIn = useCallback(async () => {
+    setInProgress(true);
+
     try {
       if (!connected) {
+        setInProgress(false);
+
         return;
       }
 
-      try {
-        const csrf = await getCsrfToken();
+      const csrf = await getCsrfToken();
 
-        if (!csrf || !signMessage) {
-          return;
-        }
+      if (!csrf || !signMessage) {
+        setInProgress(false);
 
-        const message = new SigninMessage({
-          domain: window.location.host,
-          address: publicKey?.toBase58() ?? "",
-          statement: `Sign this message to sign in to the app.\n`,
-          nonce: csrf,
-        });
-
-        const data = new TextEncoder().encode(message.prepare());
-
-        const signature = await signMessage(data);
-        const serializedSignature = bs58.encode(signature);
-
-        signIn("credentials", {
-          message: JSON.stringify(message),
-          signature: serializedSignature,
-          redirect: false,
-        });
-      } catch (error) {
-        toast.error("An error occured while signing in.");
-
-        await handleSignOut();
+        return;
       }
+
+      const message = new SigninMessage({
+        domain: window.location.host,
+        address: publicKey?.toBase58() ?? "",
+        statement: "Sign this message to sign in to the app.",
+        nonce: csrf,
+      });
+
+      const data = new TextEncoder().encode(message.prepare());
+
+      const signature = await signMessage(data);
+      const serializedSignature = bs58.encode(signature);
+
+      signIn("credentials", {
+        message: JSON.stringify(message),
+        signature: serializedSignature,
+        redirect: false,
+      });
     } catch (error) {
       console.error(error);
       toast.error("An error occured while signing in with your wallet");
+
+      await handleSignOut();
     }
-  }, [connected, handleSignOut, publicKey, signMessage]);
+
+    setInProgress(false);
+  }, [connected, handleSignOut, publicKey, setInProgress, signMessage]);
 
   useEffect(() => {
-    if (connected) {
+    if (connected && !session) {
+      console.log("called");
       handleSignIn();
     }
-  }, [connected, handleSignIn, publicKey]);
+  }, [connected, handleSignIn, publicKey, session]);
 
-  useEffect(() => {
-    if (currentPublicKey && publicKey && !currentPublicKey.equals(publicKey)) {
-      handleSignOut();
-    }
-  }, [currentPublicKey, handleSignOut, publicKey]);
+  // useEffect(() => {
+  //   if (currentPublicKey && publicKey && !currentPublicKey.equals(publicKey)) {
+  //     handleSignOut();
+  //   }
+  // }, [currentPublicKey, handleSignOut, publicKey]);
 
   return (
     <header className="fixed top-0 z-10 flex h-18 w-full border bg-white shadow-sm">
@@ -86,6 +93,7 @@ export default function Header() {
         <button
           type="button"
           className="btn btn-md btn-black"
+          disabled={inProgress}
           onClick={async () => {
             if (status === "authenticated") {
               await handleSignOut();

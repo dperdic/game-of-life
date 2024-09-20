@@ -25,7 +25,7 @@ const providers: Provider[] = [
           JSON.parse(credentials?.message || "{}"),
         );
 
-        const nextAuthUrl = new URL(process.env.AUTH_URL);
+        const nextAuthUrl = new URL(process.env.NEXTAUTH_URL);
 
         if (signinMessage.domain !== nextAuthUrl.host) {
           return null;
@@ -36,10 +36,6 @@ const providers: Provider[] = [
         if (signinMessage.nonce !== csrfToken) {
           return null;
         }
-
-        return {
-          id: signinMessage.address,
-        };
 
         const validationResult = await signinMessage.validate(
           credentials?.signature || "",
@@ -65,7 +61,7 @@ export const authOptions: AuthOptions = {
     strategy: "jwt",
     maxAge: 60 * 60,
   },
-  secret: process.env.AUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
     session({ session, token }) {
       if (session.user) {

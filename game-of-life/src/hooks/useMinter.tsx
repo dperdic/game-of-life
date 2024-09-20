@@ -12,7 +12,7 @@ export default function useMinter() {
   const { umi } = useUmi();
 
   const mintToCollection = useCallback(
-    async (name: string, symbol: string, metadataUrl: string) => {
+    async (name: string) => {
       if (!umi) {
         toast.error("Umi not initialized");
 

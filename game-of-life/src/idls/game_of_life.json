@@ -51,8 +51,8 @@
           "name": "packed_board",
           "type": {
             "array": [
-              "u32",
-              32
+              "u8",
+              144
             ]
           }
         }
@@ -84,8 +84,8 @@
             "name": "packed_board",
             "type": {
               "array": [
-                "u32",
-                32
+                "u8",
+                144
               ]
             }
           }

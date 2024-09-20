@@ -57,8 +57,8 @@ export type GameOfLife = {
           "name": "packedBoard",
           "type": {
             "array": [
-              "u32",
-              32
+              "u8",
+              144
             ]
           }
         }
@@ -90,8 +90,8 @@ export type GameOfLife = {
             "name": "packedBoard",
             "type": {
               "array": [
-                "u32",
-                32
+                "u8",
+                144
               ]
             }
           }

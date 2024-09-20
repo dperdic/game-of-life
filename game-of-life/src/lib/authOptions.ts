@@ -25,11 +25,13 @@ const providers: Provider[] = [
           JSON.parse(credentials?.message || "{}"),
         );
 
+        const nextAuthUrl = new URL(process.env.AUTH_URL);
+
+        console.log(nextAuthUrl);
+
         return {
           id: signinMessage.address,
         };
-
-        const nextAuthUrl = new URL(process.env.AUTH_URL);
 
         if (signinMessage.domain !== nextAuthUrl.host) {
           return null;

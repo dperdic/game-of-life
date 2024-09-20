@@ -88,8 +88,11 @@ const deriveKeyAndNonce = (
   secret: string,
 ): { key: Uint8Array; nonce: Uint8Array } => {
   const encoder = new TextEncoder();
+
   const secretUint8 = encoder.encode(secret);
+
   const hash = nacl.hash(secretUint8);
+
   return {
     key: hash.subarray(0, 32),
     nonce: hash.subarray(32, 32 + 24),
@@ -99,6 +102,7 @@ const deriveKeyAndNonce = (
 // Encryption function
 const encrypt = (data: Uint8Array, secret: string): Uint8Array => {
   const { key, nonce } = deriveKeyAndNonce(secret);
+
   return nacl.secretbox(data, nonce, key);
 };
 
@@ -108,6 +112,7 @@ const decrypt = (
   secret: string,
 ): Uint8Array | null => {
   const { key, nonce } = deriveKeyAndNonce(secret);
+
   return nacl.secretbox.open(encryptedData, nonce, key);
 };
 
@@ -120,15 +125,18 @@ export const packAndEncryptBoard = (
 
   for (let row = 0; row < GRID_SIZE; row++) {
     let packedRow = 0;
+
     for (let col = 0; col < GRID_SIZE; col++) {
       if (board[row][col]) {
         packedRow |= 1 << col;
       }
     }
+
     packedData[row] = packedRow;
   }
 
   const dataToEncrypt = new Uint8Array(packedData.buffer);
+
   return encrypt(dataToEncrypt, secret);
 };
 
@@ -138,15 +146,20 @@ export const decryptAndUnpackBoard = (
   secret: string,
 ): number[][] | null => {
   const decryptedData = decrypt(encryptedData, secret);
-  if (!decryptedData) return null;
+
+  if (!decryptedData) {
+    return null;
+  }
 
   const packedData = new Uint32Array(decryptedData.buffer);
+
   const board = Array(GRID_SIZE)
     .fill(null)
     .map(() => Array(GRID_SIZE).fill(0));
 
   for (let row = 0; row < GRID_SIZE; row++) {
     const packedRow = packedData[row];
+
     for (let col = 0; col < GRID_SIZE; col++) {
       board[row][col] = +((packedRow & (1 << col)) !== 0);
     }

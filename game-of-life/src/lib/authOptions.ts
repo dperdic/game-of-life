@@ -6,7 +6,7 @@ import { AuthOptions } from "next-auth";
 
 const providers: Provider[] = [
   CredentialsProvider({
-    name: "Solana",
+    name: "Solana wallet",
 
     credentials: {
       signature: {
@@ -21,12 +21,13 @@ const providers: Provider[] = [
 
     async authorize(credentials, req) {
       try {
-        console.log("something new");
-        console.log("credentials: ", credentials?.message);
-
         const signinMessage = new SigninMessage(
           JSON.parse(credentials?.message || "{}"),
         );
+
+        return {
+          id: signinMessage.address,
+        };
 
         const nextAuthUrl = new URL(process.env.AUTH_URL);
 

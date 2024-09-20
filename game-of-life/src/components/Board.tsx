@@ -31,7 +31,7 @@ export default function Board() {
   const program = useProgramContext();
 
   const [generation, setGeneration] = useState<number>(0);
-  const [localName, setLocalName] = useState<string>();
+  const [localName, setLocalName] = useState<string>("");
   const [localGrid, setLocalGrid] = useState<number[][]>(() =>
     generateEmptyGrid(),
   );

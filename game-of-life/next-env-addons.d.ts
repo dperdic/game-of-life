@@ -7,8 +7,8 @@ declare global {
       NEXT_PUBLIC_COLLECTION_NFT: string;
       NETX_PUBLIC_METADATA_URL: string;
       NEXT_PUBLIC_CNFT_SYMBOL: string;
-      AUTH_URL: string;
-      AUTH_SECRET: string;
+      NEXTAUTH_URL: string;
+      NEXTAUTH_SECRET: string;
     }
   }
 }

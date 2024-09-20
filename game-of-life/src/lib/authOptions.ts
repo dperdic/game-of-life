@@ -21,6 +21,9 @@ const providers: Provider[] = [
 
     async authorize(credentials, req) {
       try {
+        console.log(credentials?.message);
+        console.log(credentials?.signature);
+
         const signinMessage = new SigninMessage(
           JSON.parse(credentials?.message || "{}"),
         );

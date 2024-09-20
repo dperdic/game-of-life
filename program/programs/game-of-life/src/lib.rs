@@ -10,7 +10,7 @@ pub mod game_of_life {
     pub fn initialize_board(
         ctx: Context<InitializeBoard>,
         _nft_pubkey: Pubkey,
-        packed_board: [u32; 32],
+        packed_board: [u8; 144],
     ) -> Result<()> {
         ctx.accounts.board.packed_board = packed_board;
 
@@ -24,7 +24,7 @@ pub struct InitializeBoard<'info> {
     #[account(
         init,
         payer = signer,
-        space = 128 + 8,
+        space = 144 + 8,
         seeds=[nft_pubkey.as_ref()],
         bump
     )]
@@ -38,5 +38,5 @@ pub struct InitializeBoard<'info> {
 
 #[account]
 pub struct Board {
-    packed_board: [u32; 32],
+    packed_board: [u8; 144],
 }

@@ -27,15 +27,13 @@ const providers: Provider[] = [
 
         const nextAuthUrl = new URL(process.env.AUTH_URL);
 
-        console.log(nextAuthUrl);
+        if (signinMessage.domain !== nextAuthUrl.host) {
+          return null;
+        }
 
         return {
           id: signinMessage.address,
         };
-
-        if (signinMessage.domain !== nextAuthUrl.host) {
-          return null;
-        }
 
         const csrfToken = await getCsrfToken({ req: { ...req, body: null } });
 

@@ -28,6 +28,7 @@ import {
   signerIdentity,
   sol,
 } from "@metaplex-foundation/umi";
+import nacl from "tweetnacl";
 
 const BOARD_SIZE = 32;
 
@@ -76,23 +77,24 @@ const generateRandomBoard = (): number[][] => {
   return rows;
 };
 
-const packBoard = (board: number[][]): number[] => {
-  const packedData = new Uint32Array(BOARD_SIZE);
+// const packBoard = (board: number[][]) => {
+//   const packedData = new Uint32Array(BOARD_SIZE);
 
-  for (let row = 0; row < BOARD_SIZE; row++) {
-    let packedRow = 0;
+//   for (let row = 0; row < BOARD_SIZE; row++) {
+//     let packedRow = 0;
 
-    for (let col = 0; col < BOARD_SIZE; col++) {
-      if (board[row][col]) {
-        packedRow |= 1 << col;
-      }
-    }
+//     for (let col = 0; col < BOARD_SIZE; col++) {
+//       if (board[row][col]) {
+//         packedRow |= 1 << col;
+//       }
+//     }
 
-    packedData[row] = packedRow;
-  }
+//     packedData[row] = packedRow;
+//   }
 
-  return Array.from(packedData);
-};
+//   return packedData;
+//   return Array.from(packedData);
+// };
 
 const unpackBoard = (packedData: number[]): number[][] => {
   const board = Array(BOARD_SIZE)
@@ -110,70 +112,175 @@ const unpackBoard = (packedData: number[]): number[][] => {
   return board;
 };
 
-// const hashPubkey = (pubkey: PublicKey, salt: string) => {
-//   const combined = pubkey.toBase58() + salt;
+// Function to derive a key and nonce from a secret
+const deriveKeyAndNonce = (
+  secret: string,
+): { key: Uint8Array; nonce: Uint8Array } => {
+  const encoder = new TextEncoder();
 
-//   return createHash("sha256").update(combined, "utf-8").digest("hex");
-// };
+  const secretUint8 = encoder.encode(secret);
 
-describe("game-of-life", () => {
-  setProvider(AnchorProvider.env());
+  const hash = nacl.hash(secretUint8);
 
-  const program = workspace.GameOfLife as Program<GameOfLife>;
+  return {
+    key: hash.subarray(0, 32),
+    nonce: hash.subarray(32, 32 + 24),
+  };
+};
 
-  const keyPair = getKeyPair();
-  const deployProvider = getProvider();
-  let initialBoard: number[][];
+// Encryption function
+const encrypt = (data: Uint8Array, secret: string): Uint8Array => {
+  const { key, nonce } = deriveKeyAndNonce(secret);
 
-  let nftPubkey: PublicKey;
-  let hashedPubkey: string;
+  return nacl.secretbox(data, nonce, key);
+};
 
-  // const umi = createUmi(deployProvider.connection.rpcEndpoint, {
-  //   commitment: "confirmed",
-  // })
-  //   .use(mplTokenMetadata())
-  //   .use(mplBubblegum());
+// Decryption function
+const decrypt = (
+  encryptedData: Uint8Array,
+  secret: string,
+): Uint8Array | null => {
+  const { key, nonce } = deriveKeyAndNonce(secret);
 
-  // const asset = await getAssetWithProof(umi, publicKey(""));
+  return nacl.secretbox.open(encryptedData, nonce, key);
+};
 
-  // const x = verifyLeaf(umi, {}).sendAndConfirm(umi, { confirm: "" });
+// Updated packing function with encryption
+export const packAndEncryptBoard = (
+  board: number[][],
+  secret: string,
+): number[] => {
+  const packedData = new Uint32Array(BOARD_SIZE);
 
-  before(async () => {
-    console.log("generating board...");
+  for (let row = 0; row < BOARD_SIZE; row++) {
+    let packedRow = 0;
 
-    initialBoard = generateRandomBoard();
+    for (let col = 0; col < BOARD_SIZE; col++) {
+      if (board[row][col]) {
+        packedRow |= 1 << col;
+      }
+    }
 
-    nftPubkey = Keypair.generate().publicKey;
-  });
+    packedData[row] = packedRow;
+  }
 
-  it("Is initialized!", async () => {
-    console.log("storing board...");
+  console.log(packedData);
 
-    const packedBoard = packBoard(initialBoard);
+  const dataToEncrypt = new Uint8Array(packedData.buffer);
 
-    const tx = await program.methods
-      .initializeBoard(nftPubkey, packedBoard)
-      .accounts({
-        signer: keyPair.publicKey,
-      })
-      .rpc();
+  return Array.from(encrypt(dataToEncrypt, secret));
+};
 
-    const x = program.methods.initializeBoard(nftPubkey, packedBoard);
+// Updated unpacking function with decryption
+export const decryptAndUnpackBoard = (
+  encryptedData: number[],
+  secret: string,
+): number[][] | null => {
+  const decryptedData = decrypt(new Uint8Array(encryptedData), secret);
 
-    await confirmTransaction(deployProvider, tx);
+  if (!decryptedData) {
+    return null;
+  }
 
-    console.log("Your transaction signature", tx);
-  });
+  const packedData = Array.from(new Uint32Array(decryptedData.buffer).slice(8));
 
-  after(async () => {
-    console.log("comparing boards...");
+  const board = Array(BOARD_SIZE)
+    .fill(null)
+    .map(() => Array(BOARD_SIZE).fill(0));
 
-    const board = getPda(program, nftPubkey);
+  for (let row = 0; row < BOARD_SIZE; row++) {
+    const packedRow = packedData[row];
 
-    const fetchedBoard = await program.account.board.fetch(board);
+    for (let col = 0; col < BOARD_SIZE; col++) {
+      board[row][col] = +((packedRow & (1 << col)) !== 0);
+    }
+  }
 
-    const unpackedBoard = unpackBoard(fetchedBoard.packedBoard);
+  return board;
+};
 
-    expect(unpackedBoard).to.deep.equal(initialBoard);
+describe("encryption tests", () => {
+  const randomBoard = generateRandomBoard();
+
+  const secret =
+    "9722abd2533c57666c527000b6ee9e3dfb1cd9bee5ca6ecd00bc561bc8fd4612";
+  const publicKey = Keypair.generate().publicKey.toBase58();
+
+  it("should work", () => {
+    const packedAndEncrypted = packAndEncryptBoard(
+      randomBoard,
+      `${publicKey}${secret}`,
+    );
+
+    console.log(packedAndEncrypted.length);
+
+    const unpackedAndDecrypted = decryptAndUnpackBoard(
+      packedAndEncrypted,
+      `${publicKey}${secret}`,
+    );
+
+    expect(randomBoard).to.deep.eq(unpackedAndDecrypted);
   });
 });
+
+// describe("game-of-life", () => {
+//   setProvider(AnchorProvider.env());
+
+//   const program = workspace.GameOfLife as Program<GameOfLife>;
+
+//   const keyPair = getKeyPair();
+//   const deployProvider = getProvider();
+//   let initialBoard: number[][];
+
+//   let nftPubkey: PublicKey;
+//   let hashedPubkey: string;
+
+//   // const umi = createUmi(deployProvider.connection.rpcEndpoint, {
+//   //   commitment: "confirmed",
+//   // })
+//   //   .use(mplTokenMetadata())
+//   //   .use(mplBubblegum());
+
+//   // const asset = await getAssetWithProof(umi, publicKey(""));
+
+//   // const x = verifyLeaf(umi, {}).sendAndConfirm(umi, { confirm: "" });
+
+//   before(async () => {
+//     console.log("generating board...");
+
+//     initialBoard = generateRandomBoard();
+
+//     nftPubkey = Keypair.generate().publicKey;
+//   });
+
+//   it("Is initialized!", async () => {
+//     console.log("storing board...");
+
+//     const packedBoard = packBoard(initialBoard);
+
+//     const tx = await program.methods
+//       .initializeBoard(nftPubkey, packedBoard)
+//       .accounts({
+//         signer: keyPair.publicKey,
+//       })
+//       .rpc();
+
+//     const x = program.methods.initializeBoard(nftPubkey, packedBoard);
+
+//     await confirmTransaction(deployProvider, tx);
+
+//     console.log("Your transaction signature", tx);
+//   });
+
+//   after(async () => {
+//     console.log("comparing boards...");
+
+//     const board = getPda(program, nftPubkey);
+
+//     const fetchedBoard = await program.account.board.fetch(board);
+
+//     const unpackedBoard = unpackBoard(fetchedBoard.packedBoard);
+
+//     expect(unpackedBoard).to.deep.equal(initialBoard);
+//   });
+// });

@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/game_of_life.json`.
  */
 export type GameOfLife = {
-  "address": "BwocGJZSrrxfE3dSWVfCiL7AQSKRCjYbeHs4vErYEfmN",
+  "address": "EU7cqobN7X8oK3oTEBhEXDs1SXkn2JDRzCmxMnfg8waj",
   "metadata": {
     "name": "gameOfLife",
     "version": "0.1.0",
@@ -33,13 +33,13 @@ export type GameOfLife = {
             "seeds": [
               {
                 "kind": "arg",
-                "path": "nftPubkey"
+                "path": "assetId"
               }
             ]
           }
         },
         {
-          "name": "signer",
+          "name": "payer",
           "writable": true,
           "signer": true
         },
@@ -50,9 +50,135 @@ export type GameOfLife = {
       ],
       "args": [
         {
-          "name": "nftPubkey",
-          "type": "pubkey"
+          "name": "packedBoard",
+          "type": {
+            "array": [
+              "u8",
+              144
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "mintNft",
+      "discriminator": [
+        211,
+        57,
+        6,
+        167,
+        15,
+        219,
+        35,
+        251
+      ],
+      "accounts": [
+        {
+          "name": "treeConfig",
+          "writable": true
         },
+        {
+          "name": "leafOwner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "merkleTree",
+          "writable": true
+        },
+        {
+          "name": "treeAuthority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  114,
+                  101,
+                  101,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "collectionMint"
+        },
+        {
+          "name": "collectionMetadata",
+          "writable": true
+        },
+        {
+          "name": "editionAccount"
+        },
+        {
+          "name": "bubblegumSigner"
+        },
+        {
+          "name": "logWrapper"
+        },
+        {
+          "name": "compressionProgram"
+        },
+        {
+          "name": "tokenMetadataProgram"
+        },
+        {
+          "name": "bubblegumProgram"
+        },
+        {
+          "name": "collectionAuthority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  108,
+                  108,
+                  101,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "board",
+          "writable": true
+        }
+      ],
+      "args": [
         {
           "name": "packedBoard",
           "type": {
@@ -61,6 +187,18 @@ export type GameOfLife = {
               144
             ]
           }
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "symbol",
+          "type": "string"
+        },
+        {
+          "name": "uri",
+          "type": "string"
         }
       ]
     }

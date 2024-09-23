@@ -20,21 +20,35 @@ import {
   generateRandomGrid,
   getPda,
 } from "@/utils/functions";
-import { PublicKey } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import { produce } from "immer";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { useSession } from "next-auth/react";
 import { packBoard, unpackBoard } from "@/actions/BoardActions";
 import { useWallet } from "@solana/wallet-adapter-react";
+import {
+  fetchMerkleTree,
+  fetchTreeConfig,
+  fetchTreeConfigFromSeeds,
+  MPL_BUBBLEGUM_PROGRAM_ID,
+  mplBubblegum,
+  SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
+  SPL_NOOP_PROGRAM_ID,
+} from "@metaplex-foundation/mpl-bubblegum";
+import { publicKey } from "@metaplex-foundation/umi";
+import { PublicKey as SolanaPublicKey } from "@solana/web3.js";
+import { Address } from "@coral-xyz/anchor";
+import { fetchDigitalAsset } from "@metaplex-foundation/mpl-token-metadata";
+import { TOKEN_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
 
 export default function Board() {
   const { status } = useSession();
 
-  const { dasApiRpc } = useUmi();
+  const { dasApiRpc, umi } = useUmi();
   const { mintToCollection } = useMinter();
   const program = useProgramContext();
-  const { publicKey } = useWallet();
+  const { publicKey: walletPublicKey } = useWallet();
 
   const [generation, setGeneration] = useState<number>(0);
   const [localName, setLocalName] = useState<string>("");
@@ -83,44 +97,98 @@ export default function Board() {
 
     console.log("packed board: ", newBoard);
 
+    // try {
+    //   const tx = await program.methods
+    //     .initializeBoard(new PublicKey(cNftId), newBoard)
+    //     .rpc();
+
+    //   const confirmation = await confirmTransaction(tx);
+
+    //   if (confirmation.value.err) {
+    //     console.error(confirmation.value.err);
+    //     toast.error("An error occured while confirming the transaction");
+
+    //     setInProgress(false);
+    //     return;
+    //   }
+
+    //   setGrid(localGrid);
+
+    //   const pda = getPda(program, new PublicKey(cNftId));
+
+    //   const { packedBoard } = await program.account.board.fetch(pda);
+
+    //   console.log("fetched board: ", packedBoard);
+
+    //   const decryptedBoard = await unpackBoard(
+    //     publicKey?.toBase58()!,
+    //     cNftId,
+    //     packedBoard,
+    //   );
+
+    //   console.log(decryptedBoard);
+
+    //   setPlayable(true);
+    // } catch (error) {
+    //   console.error(error);
+    //   toast.error("An error occured while initializing board");
+    // }
+
+    // setInProgress(false);
+  };
+
+  const handleTest = async () => {
     try {
+      if (!program || !umi) return;
+
+      console.log(process.env.NEXT_PUBLIC_MERKLE_TREE);
+
+      const treeConfig = await fetchTreeConfigFromSeeds(umi, {
+        merkleTree: publicKey(process.env.NEXT_PUBLIC_MERKLE_TREE),
+      });
+
+      console.log(treeConfig);
+
+      const newBoard = await packBoard(
+        Keypair.generate().publicKey.toBase58(),
+        localGrid,
+      );
+
+      const collectionAsset = await fetchDigitalAsset(
+        umi,
+        publicKey(process.env.NEXT_PUBLIC_COLLECTION_NFT),
+      );
+
+      console.log("collection metadata pubkey: ", collectionAsset);
+
       const tx = await program.methods
-        .initializeBoard(new PublicKey(cNftId), newBoard)
+        .mintNft(
+          newBoard,
+          "some name",
+          process.env.NEXT_PUBLIC_CNFT_SYMBOL,
+          process.env.NEXT_PUBLIC_METADATA_URL,
+        )
+        .accounts({
+          merkleTree: process.env.NEXT_PUBLIC_MERKLE_TREE,
+          board: SolanaPublicKey.unique(),
+          treeConfig: treeConfig.publicKey,
+          collectionMetadata: collectionAsset.metadata.publicKey,
+          collectionMint: collectionAsset.mint.publicKey,
+          editionAccount: collectionAsset.edition!.publicKey,
+          logWrapper: SPL_NOOP_PROGRAM_ID,
+          compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
+          tokenMetadataProgram: TOKEN_PROGRAM_ID,
+          bubblegumProgram: MPL_BUBBLEGUM_PROGRAM_ID,
+          bubblegumSigner: MPL_BUBBLEGUM_PROGRAM_ID,
+        })
         .rpc();
 
       const confirmation = await confirmTransaction(tx);
 
-      if (confirmation.value.err) {
-        console.error(confirmation.value.err);
-        toast.error("An error occured while confirming the transaction");
-
-        setInProgress(false);
-        return;
-      }
-
-      setGrid(localGrid);
-
-      const pda = getPda(program, new PublicKey(cNftId));
-
-      const { packedBoard } = await program.account.board.fetch(pda);
-
-      console.log("fetched board: ", packedBoard);
-
-      const decryptedBoard = await unpackBoard(
-        publicKey?.toBase58()!,
-        cNftId,
-        packedBoard,
-      );
-
-      console.log(decryptedBoard);
-
-      setPlayable(true);
+      console.log("tx: ", tx);
     } catch (error) {
       console.error(error);
-      toast.error("An error occured while initializing board");
     }
-
-    setInProgress(false);
   };
 
   const runSimulation = useCallback(() => {
@@ -310,13 +378,13 @@ export default function Board() {
                     New game
                   </button>
 
-                  {/* <button
+                  <button
                     type="button"
                     className="btn btn-md btn-black"
-                    onClick={async () => await placeholder()}
+                    onClick={handleTest}
                   >
                     Test
-                  </button> */}
+                  </button>
                 </div>
 
                 <div className="flex flex-row justify-center gap-3">

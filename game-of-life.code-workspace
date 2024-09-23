@@ -5,10 +5,6 @@
       "name": "root"
     },
     {
-      "path": "app",
-      "name": "app"
-    },
-    {
       "path": "game-of-life",
       "name": "next"
     },

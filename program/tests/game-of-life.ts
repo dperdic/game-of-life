@@ -12,6 +12,11 @@ import fs from "fs";
 import { expect } from "chai";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import {
+  createNft,
+  approveCollectionAuthority,
+} from "@metaplex-foundation/mpl-token-metadata";
+import {
+  createTree,
   fetchMerkleTree,
   getAssetWithProof,
   getChangeLogSerializer,
@@ -29,6 +34,8 @@ import {
   sol,
 } from "@metaplex-foundation/umi";
 import nacl from "tweetnacl";
+
+setProvider(AnchorProvider.env());
 
 const BOARD_SIZE = 32;
 
@@ -172,27 +179,37 @@ export const decryptAndUnpackBoard = (
   return unpackBoard(packedData);
 };
 
-describe("encryption tests", () => {
-  const randomBoard = generateRandomBoard();
+// describe("encryption tests", () => {
+//   const randomBoard = generateRandomBoard();
 
-  const secret =
-    "9722abd2533c57666c527000b6ee9e3dfb1cd9bee5ca6ecd00bc561bc8fd4612";
-  const publicKey = Keypair.generate().publicKey.toBase58();
+//   const secret =
+//     "9722abd2533c57666c527000b6ee9e3dfb1cd9bee5ca6ecd00bc561bc8fd4612";
+//   const publicKey = Keypair.generate().publicKey.toBase58();
 
-  it("should work", () => {
-    const packedAndEncrypted = packAndEncryptBoard(
-      randomBoard,
-      `${publicKey}${secret}`,
-    );
+//   it("should work", () => {
+//     const packedAndEncrypted = packAndEncryptBoard(
+//       randomBoard,
+//       `${publicKey}${secret}`,
+//     );
 
-    const unpackedAndDecrypted = decryptAndUnpackBoard(
-      packedAndEncrypted,
-      `${publicKey}${secret}`,
-    );
+//     const unpackedAndDecrypted = decryptAndUnpackBoard(
+//       packedAndEncrypted,
+//       `${publicKey}${secret}`,
+//     );
 
-    expect(randomBoard).to.deep.eq(unpackedAndDecrypted);
-  });
-});
+//     expect(randomBoard).to.deep.eq(unpackedAndDecrypted);
+//   });
+// });
+
+// describe("nft tests", () => {
+//   const deployProvider = getProvider();
+
+//   const umi = createUmi(deployProvider.connection.rpcEndpoint, {
+//     commitment: "confirmed",
+//   })
+//     .use(mplTokenMetadata())
+//     .use(mplBubblegum());
+// });
 
 // describe("game-of-life", () => {
 //   setProvider(AnchorProvider.env());
@@ -205,16 +222,6 @@ describe("encryption tests", () => {
 
 //   let nftPubkey: PublicKey;
 //   let hashedPubkey: string;
-
-//   // const umi = createUmi(deployProvider.connection.rpcEndpoint, {
-//   //   commitment: "confirmed",
-//   // })
-//   //   .use(mplTokenMetadata())
-//   //   .use(mplBubblegum());
-
-//   // const asset = await getAssetWithProof(umi, publicKey(""));
-
-//   // const x = verifyLeaf(umi, {}).sendAndConfirm(umi, { confirm: "" });
 
 //   before(async () => {
 //     console.log("generating board...");

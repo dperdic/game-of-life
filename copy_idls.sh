@@ -10,7 +10,7 @@ IDL_DIR="program/target/idl"
 TYPES_DIR="program/target/types"
 
 # Destination dir
-FRONTEND_IDL_DIR="app/src/idls"
+FRONTEND_IDL_DIR="game-of-life/src/idls"
 
 # Make destination dir if it does not exist
 if [[ ! -d "$FRONTEND_IDL_DIR" ]]; then

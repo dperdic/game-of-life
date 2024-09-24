@@ -19,8 +19,11 @@ export const confirmTransaction = async (tx: string) => {
   );
 };
 
-export const getPda = (program: Program<GameOfLife>, pdaSeed: PublicKey) => {
-  const [address, bumpState] = PublicKey.findProgramAddressSync(
+export const getBoardPda = (
+  program: Program<GameOfLife>,
+  pdaSeed: PublicKey,
+) => {
+  const [address, _bumpState] = PublicKey.findProgramAddressSync(
     [pdaSeed.toBytes()],
     program.programId,
   );

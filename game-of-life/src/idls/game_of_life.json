@@ -1,5 +1,5 @@
 {
-  "address": "EU7cqobN7X8oK3oTEBhEXDs1SXkn2JDRzCmxMnfg8waj",
+  "address": "Ghu6Yq9VpvqH9UJwKaMYbigZjWZR7598uiVsXqCU7zQJ",
   "metadata": {
     "name": "game_of_life",
     "version": "0.1.0",
@@ -27,7 +27,7 @@
             "seeds": [
               {
                 "kind": "arg",
-                "path": "asset_id"
+                "path": "nft_pubkey"
               }
             ]
           }
@@ -44,6 +44,10 @@
       ],
       "args": [
         {
+          "name": "_nft_pubkey",
+          "type": "pubkey"
+        },
+        {
           "name": "packed_board",
           "type": {
             "array": [
@@ -51,148 +55,6 @@
               144
             ]
           }
-        }
-      ]
-    },
-    {
-      "name": "mint_nft",
-      "discriminator": [
-        211,
-        57,
-        6,
-        167,
-        15,
-        219,
-        35,
-        251
-      ],
-      "accounts": [
-        {
-          "name": "tree_config",
-          "writable": true
-        },
-        {
-          "name": "leaf_owner",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "merkle_tree",
-          "writable": true
-        },
-        {
-          "name": "tree_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  116,
-                  114,
-                  101,
-                  101,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "collection_mint"
-        },
-        {
-          "name": "collection_metadata",
-          "writable": true
-        },
-        {
-          "name": "edition_account"
-        },
-        {
-          "name": "bubblegum_signer"
-        },
-        {
-          "name": "log_wrapper"
-        },
-        {
-          "name": "compression_program"
-        },
-        {
-          "name": "token_metadata_program"
-        },
-        {
-          "name": "bubblegum_program"
-        },
-        {
-          "name": "collection_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  99,
-                  111,
-                  108,
-                  108,
-                  101,
-                  99,
-                  116,
-                  105,
-                  111,
-                  110,
-                  95,
-                  97,
-                  117,
-                  116,
-                  104,
-                  111,
-                  114,
-                  105,
-                  116,
-                  121
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "board",
-          "writable": true
-        }
-      ],
-      "args": [
-        {
-          "name": "_packed_board",
-          "type": {
-            "array": [
-              "u8",
-              144
-            ]
-          }
-        },
-        {
-          "name": "name",
-          "type": "string"
-        },
-        {
-          "name": "symbol",
-          "type": "string"
-        },
-        {
-          "name": "uri",
-          "type": "string"
         }
       ]
     }

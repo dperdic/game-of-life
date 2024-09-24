@@ -1,12 +1,14 @@
 [toolchain]
-anchor_version = "0.29.0"
 
 [features]
 resolution = true
 skip-lint = false
 
 [programs.localnet]
-game_of_life = "EU7cqobN7X8oK3oTEBhEXDs1SXkn2JDRzCmxMnfg8waj"
+game_of_life = "Ghu6Yq9VpvqH9UJwKaMYbigZjWZR7598uiVsXqCU7zQJ"
+
+[programs.devnet]
+game_of_life = "Ghu6Yq9VpvqH9UJwKaMYbigZjWZR7598uiVsXqCU7zQJ"
 
 [registry]
 url = "https://api.apr.dev"

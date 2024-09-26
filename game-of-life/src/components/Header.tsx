@@ -1,6 +1,11 @@
 "use client";
 
-import { useTransactionStateStore } from "@/app/_store/gameOfLifeStore";
+import {
+  useBoardStateStore,
+  useScreenStateStore,
+  useTransactionStateStore,
+} from "@/app/_store/gameOfLifeStore";
+import { ScreenType } from "@/utils/constants";
 import { SigninMessage } from "@/utils/signature";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -14,10 +19,18 @@ export default function Header() {
   const { inProgress, setInProgress } = useTransactionStateStore();
   const { data: session, status } = useSession();
   const { connected, publicKey, signMessage, disconnect, wallet } = useWallet();
+  const { setVisible } = useWalletModal();
+  const { resetGame } = useBoardStateStore();
+  const { setScreen } = useScreenStateStore();
+
   const [currentPublicKey, setCurrentPublicKey] = useState<PublicKey | null>(
     null,
   );
-  const { setVisible } = useWalletModal();
+
+  const handleReset = () => {
+    resetGame();
+    setScreen(ScreenType.Menu);
+  };
 
   const handleSignOut = useCallback(async () => {
     await disconnect();
@@ -86,7 +99,10 @@ export default function Header() {
   return (
     <header className="fixed top-0 z-10 flex h-18 w-full border bg-white shadow-sm">
       <nav className="flex h-full w-full items-center justify-between gap-4 px-8 sm:px-16">
-        <span className="relative flex h-5 flex-shrink">
+        <span
+          className="relative flex h-5 flex-shrink cursor-pointer"
+          onClick={handleReset}
+        >
           <img src="/next.svg" alt="NextJS" />
         </span>
 

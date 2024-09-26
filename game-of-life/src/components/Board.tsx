@@ -104,18 +104,6 @@ export default function Board() {
 
       setGrid(localGrid);
 
-      // const pda = getBoardPda(program, new PublicKey(cNftId));
-
-      // const { packedBoard } = await program.account.board.fetch(pda);
-
-      // const decryptedBoard = await unpackBoard(
-      //   publicKey?.toBase58()!,
-      //   cNftId,
-      //   packedBoard,
-      // );
-
-      // console.log("decrypted board: ", decryptedBoard);
-
       setPlayable(true);
     } catch (error) {
       console.error(error);

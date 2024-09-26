@@ -33,6 +33,7 @@ interface BoardStateStore {
   setGrid: (newGrid: number[][]) => void;
   createNewGame: () => void;
   playExistingGame: (grid: number[][]) => void;
+  resetGame: () => void;
 }
 
 export const useBoardStateStore = create<BoardStateStore>((set) => ({
@@ -43,16 +44,25 @@ export const useBoardStateStore = create<BoardStateStore>((set) => ({
   setPlayable: (isPlayable) =>
     set((state) => ({ ...state, playable: isPlayable })),
   setGrid: (newGrid) => set((state) => ({ ...state, grid: newGrid })),
+
   createNewGame: () =>
     set(() => ({
       newGame: true,
       playable: false,
       grid: generateEmptyGrid(),
     })),
+
   playExistingGame: (grid) =>
     set(() => ({
       grid: grid,
       newGame: false,
       playable: true,
+    })),
+
+  resetGame: () =>
+    set(() => ({
+      newGame: true,
+      playable: false,
+      grid: generateEmptyGrid(),
     })),
 }));

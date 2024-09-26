@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/game_of_life.json`.
  */
 export type GameOfLife = {
-  "address": "Ghu6Yq9VpvqH9UJwKaMYbigZjWZR7598uiVsXqCU7zQJ",
+  "address": "7Zo1z7hDgyHqoA7ehaFXJhYAzJdciCoPqox86P7gVtzU",
   "metadata": {
     "name": "gameOfLife",
     "version": "0.1.0",

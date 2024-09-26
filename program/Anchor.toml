@@ -5,11 +5,11 @@ anchor_version = "0.30.1"
 resolution = true
 skip-lint = false
 
-[programs.localnet]
-game_of_life = "Ghu6Yq9VpvqH9UJwKaMYbigZjWZR7598uiVsXqCU7zQJ"
-
 [programs.devnet]
-game_of_life = "Ghu6Yq9VpvqH9UJwKaMYbigZjWZR7598uiVsXqCU7zQJ"
+game_of_life = "7Zo1z7hDgyHqoA7ehaFXJhYAzJdciCoPqox86P7gVtzU"
+
+[programs.localnet]
+game_of_life = "7Zo1z7hDgyHqoA7ehaFXJhYAzJdciCoPqox86P7gVtzU"
 
 [registry]
 url = "https://api.apr.dev"

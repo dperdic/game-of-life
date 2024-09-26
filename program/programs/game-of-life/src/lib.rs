@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("Ghu6Yq9VpvqH9UJwKaMYbigZjWZR7598uiVsXqCU7zQJ");
+declare_id!("7Zo1z7hDgyHqoA7ehaFXJhYAzJdciCoPqox86P7gVtzU");
 
 #[program]
 pub mod game_of_life {

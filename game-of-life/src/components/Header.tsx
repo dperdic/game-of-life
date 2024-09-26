@@ -79,6 +79,7 @@ export default function Header() {
   // useEffect(() => {
   //   if (currentPublicKey && publicKey && !currentPublicKey.equals(publicKey)) {
   //     handleSignOut();
+  //     setCurrentPublicKey(null);
   //   }
   // }, [currentPublicKey, handleSignOut, publicKey]);
 

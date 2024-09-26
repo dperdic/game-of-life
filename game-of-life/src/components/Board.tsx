@@ -17,21 +17,20 @@ import {
   confirmTransaction,
   generateEmptyGrid,
   generateRandomGrid,
-  getBoardPda,
 } from "@/utils/functions";
 import { PublicKey } from "@solana/web3.js";
 import { produce } from "immer";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { useSession } from "next-auth/react";
-import { packBoard, unpackBoard } from "@/actions/BoardActions";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { packBoard } from "@/actions/BoardActions";
 
 export default function Board() {
   const program = useProgramContext();
-  const { publicKey } = useWallet();
+
   const { status } = useSession();
-  const { playable, grid, setGrid, setPlayable } = useBoardStateStore();
+  const { playable, grid, newGame, setGrid, setPlayable } =
+    useBoardStateStore();
   const { inProgress, setInProgress } = useTransactionStateStore();
 
   const { mintToCollection } = useMinter();
@@ -55,6 +54,14 @@ export default function Board() {
   useEffect(() => {
     runningRef.current = running;
   }, [running]);
+
+  useEffect(() => {
+    if (!newGame && playable && grid) {
+      setLocalGrid(grid);
+
+      setInProgress(false);
+    }
+  }, [grid, newGame, playable, setInProgress]);
 
   const handleNewGame = async () => {
     setInProgress(true);
@@ -97,17 +104,17 @@ export default function Board() {
 
       setGrid(localGrid);
 
-      const pda = getBoardPda(program, new PublicKey(cNftId));
+      // const pda = getBoardPda(program, new PublicKey(cNftId));
 
-      const { packedBoard } = await program.account.board.fetch(pda);
+      // const { packedBoard } = await program.account.board.fetch(pda);
 
-      const decryptedBoard = await unpackBoard(
-        publicKey?.toBase58()!,
-        cNftId,
-        packedBoard,
-      );
+      // const decryptedBoard = await unpackBoard(
+      //   publicKey?.toBase58()!,
+      //   cNftId,
+      //   packedBoard,
+      // );
 
-      console.log("decrypted board: ", decryptedBoard);
+      // console.log("decrypted board: ", decryptedBoard);
 
       setPlayable(true);
     } catch (error) {

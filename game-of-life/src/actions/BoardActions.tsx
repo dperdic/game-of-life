@@ -37,22 +37,26 @@ export const unpackBoard = async (
   const session = await getSession();
 
   if (session?.user?.name !== walletPublicKey) {
+    console.error("invalid user: ", session?.user?.name, walletPublicKey);
     return null;
   }
 
-  // check if user is owner of the nft here
+  const asset = await dasApiRpc.getAsset(publicKey(nftPublicKey));
 
-  const { items } = await dasApiRpc.getAssetsByOwner({
-    owner: publicKey(walletPublicKey),
-  });
+  if (!asset) {
+    console.error("No asset with public key ", nftPublicKey);
+    return null;
+  }
 
-  const asset = items.find((x) => x.id === nftPublicKey);
+  if (asset.burnt) {
+    console.error("Asset burnt");
+    return null;
+  }
 
-  // if (!asset) {
-  //   return null;
-  // }
-
-  console.log(items);
+  if (asset.ownership.owner !== publicKey(nftPublicKey)) {
+    console.error("Invalid asset owner");
+    return null;
+  }
 
   return decryptAndUnpackBoard(
     board,

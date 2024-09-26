@@ -13,6 +13,8 @@ import { getBoardPda } from "@/utils/functions";
 import { PublicKey } from "@solana/web3.js";
 import { toast } from "react-toastify";
 import { unpackBoard } from "@/actions/BoardActions";
+import { useSession } from "next-auth/react";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 type CollectionAsset = {
   id: string;
@@ -24,6 +26,10 @@ export default function Menu() {
   const { inProgress, setInProgress } = useTransactionStateStore();
   const { createNewGame, playExistingGame } = useBoardStateStore();
   const { setScreen } = useScreenStateStore();
+  const { data } = useSession();
+  const { publicKey: walletPublicKey } = useWallet();
+  const [existingNfts, setExistingNfts] = useState<CollectionAsset[]>([]);
+
   const program = useProgramContext();
 
   const handleStartNewGame = async () => {
@@ -48,13 +54,20 @@ export default function Menu() {
       return;
     }
 
+    if (!walletPublicKey) {
+      toast.error("Wallet not connected, public key does not exist");
+      setInProgress(false);
+
+      return;
+    }
+
     try {
       const boardPda = getBoardPda(program, new PublicKey(id));
 
       const board = await program.account.board.fetch(boardPda);
 
       const unpackedBoard = await unpackBoard(
-        umi.identity.publicKey,
+        walletPublicKey.toBase58(),
         id,
         board.packedBoard,
       );
@@ -76,8 +89,6 @@ export default function Menu() {
     setInProgress(true);
   };
 
-  const [existingNfts, setExistingNfts] = useState<CollectionAsset[]>([]);
-
   useEffect(() => {
     if (!umi || !dasApiRpc) {
       return;
@@ -88,6 +99,14 @@ export default function Menu() {
         owner: umi.identity.publicKey,
       })
       .then((res) => {
+        console.log(
+          res.items.filter(
+            (x) =>
+              x.grouping[0]?.group_value ===
+              process.env.NEXT_PUBLIC_COLLECTION_NFT,
+          ),
+        );
+
         const collectionAssets = res.items
           .filter(
             (x) =>
@@ -130,7 +149,7 @@ export default function Menu() {
                 key={x.id}
                 type="button"
                 className="btn btn-md btn-white"
-                disabled={inProgress}
+                disabled={inProgress || !data}
                 onClick={async () => {
                   await handlePlayExistingGame(x.id);
                 }}

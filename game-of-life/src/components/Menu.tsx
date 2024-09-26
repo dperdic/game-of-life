@@ -10,7 +10,7 @@ export default function Menu() {
   const { mintToCollection } = useMinter();
 
   const handleStartNewGame = async () => {
-    const cNftId = await mintToCollection("Game of life test", "$GOL", "");
+    const cNftId = await mintToCollection("Game of life test");
 
     console.log(cNftId!.toString());
   };

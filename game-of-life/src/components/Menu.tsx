@@ -1,19 +1,82 @@
 "use client";
 
-import useMinter from "@/hooks/useMinter";
+import { useEffect, useState } from "react";
+import {
+  useBoardStateStore,
+  useScreenStateStore,
+  useTransactionStateStore,
+} from "@/app/_store/gameOfLifeStore";
 import useUmi from "@/hooks/useUmi";
-import { publicKey } from "@metaplex-foundation/umi";
-import { useEffect } from "react";
+import { ScreenType } from "@/utils/constants";
+import { useProgramContext } from "@/providers/ProgramContext";
+import { getBoardPda } from "@/utils/functions";
+import { PublicKey } from "@solana/web3.js";
+import { toast } from "react-toastify";
+import { unpackBoard } from "@/actions/BoardActions";
+
+type CollectionAsset = {
+  id: string;
+  name: string;
+};
 
 export default function Menu() {
   const { umi, dasApiRpc } = useUmi();
-  const { mintToCollection } = useMinter();
+  const { inProgress, setInProgress } = useTransactionStateStore();
+  const { createNewGame, playExistingGame } = useBoardStateStore();
+  const { setScreen } = useScreenStateStore();
+  const program = useProgramContext();
 
   const handleStartNewGame = async () => {
-    const cNftId = await mintToCollection("Game of life test");
-
-    console.log(cNftId!.toString());
+    createNewGame();
+    setScreen(ScreenType.Board);
   };
+
+  const handlePlayExistingGame = async (id: string) => {
+    setInProgress(true);
+
+    if (!program) {
+      toast.error("program doesn't exist");
+      setInProgress(false);
+
+      return;
+    }
+
+    if (!umi) {
+      toast.error("umi doesn't exist");
+      setInProgress(false);
+
+      return;
+    }
+
+    try {
+      const boardPda = getBoardPda(program, new PublicKey(id));
+
+      const board = await program.account.board.fetch(boardPda);
+
+      const unpackedBoard = await unpackBoard(
+        umi.identity.publicKey,
+        id,
+        board.packedBoard,
+      );
+
+      if (!unpackedBoard) {
+        toast.error("board doesn't exist");
+        setInProgress(false);
+
+        return;
+      }
+
+      playExistingGame(unpackedBoard);
+      setScreen(ScreenType.Board);
+    } catch (error) {
+      console.error(error);
+      toast.error("An error occured while fetching the board");
+    }
+
+    setInProgress(true);
+  };
+
+  const [existingNfts, setExistingNfts] = useState<CollectionAsset[]>([]);
 
   useEffect(() => {
     if (!umi || !dasApiRpc) {
@@ -22,36 +85,62 @@ export default function Menu() {
 
     dasApiRpc
       .getAssetsByOwner({
-        owner: publicKey("3G4Pg28khwAuBSeocC2PdVbPoUquj5Gm4GfYvd2pt8VS"),
+        owner: umi.identity.publicKey,
       })
-      .then((res) =>
-        console.log(
-          res.items.filter(
+      .then((res) => {
+        const collectionAssets = res.items
+          .filter(
             (x) =>
-              x.grouping[0].group_value ===
-              "6MGjmJZjMxJCy3Pxqt7C3CGvGWmYXfspmzuZf2cGWMXz",
-          ),
-        ),
-      );
+              x.grouping[0]?.group_value ===
+              process.env.NEXT_PUBLIC_COLLECTION_NFT,
+          )
+          .map(
+            (x) =>
+              ({
+                id: x.id,
+                name: x.content.metadata.name,
+              }) as CollectionAsset,
+          );
+
+        setExistingNfts(collectionAssets);
+      });
   }, [dasApiRpc, umi]);
 
   return (
-    <div className="flex flex-col justify-center gap-4 overflow-hidden overflow-x-auto rounded-lg border bg-white p-4 shadow">
-      <h3 className="text-center font-semibold">Menu</h3>
+    <div className="flex flex-col justify-center gap-8 overflow-hidden overflow-x-auto rounded-lg border bg-white p-4 shadow">
+      <h3 className="text-center text-xl font-semibold">Menu</h3>
 
-      <div className="flex flex-col justify-center gap-4">
-        <div className="text-center">
-          <button
-            type="button"
-            className="btn btn-md btn-black"
-            onClick={handleStartNewGame}
-          >
-            Start new game
-          </button>
-        </div>
-
-        <div className="flex flex-row flex-wrap gap-4">{}</div>
+      <div className="text-center">
+        <button
+          type="button"
+          className="btn btn-md btn-black"
+          onClick={handleStartNewGame}
+        >
+          New game
+        </button>
       </div>
+
+      {existingNfts && !!existingNfts.length && (
+        <div className="space-y-4">
+          <h3 className="text-center text-lg font-semibold">Your games</h3>
+
+          <div className="flex flex-row flex-wrap justify-center gap-4">
+            {existingNfts.map((x) => (
+              <button
+                key={x.id}
+                type="button"
+                className="btn btn-md btn-white"
+                disabled={inProgress}
+                onClick={async () => {
+                  await handlePlayExistingGame(x.id);
+                }}
+              >
+                {x.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -72,7 +72,6 @@ export default function Header() {
 
   useEffect(() => {
     if (connected && !session) {
-      console.log("called");
       handleSignIn();
     }
   }, [connected, handleSignIn, publicKey, session]);

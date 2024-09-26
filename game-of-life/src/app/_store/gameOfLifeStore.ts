@@ -20,7 +20,7 @@ interface ScreenStateStore {
 }
 
 export const useScreenStateStore = create<ScreenStateStore>((set) => ({
-  screen: ScreenType.Board,
+  screen: ScreenType.Menu,
   setScreen: (newScreen) => set(() => ({ screen: newScreen })),
 }));
 
@@ -31,6 +31,8 @@ interface BoardStateStore {
   setNewGame: (isNewGame: boolean) => void;
   setPlayable: (isPlayable: boolean) => void;
   setGrid: (newGrid: number[][]) => void;
+  createNewGame: () => void;
+  playExistingGame: (grid: number[][]) => void;
 }
 
 export const useBoardStateStore = create<BoardStateStore>((set) => ({
@@ -41,4 +43,16 @@ export const useBoardStateStore = create<BoardStateStore>((set) => ({
   setPlayable: (isPlayable) =>
     set((state) => ({ ...state, playable: isPlayable })),
   setGrid: (newGrid) => set((state) => ({ ...state, grid: newGrid })),
+  createNewGame: () =>
+    set(() => ({
+      newGame: true,
+      playable: false,
+      grid: generateEmptyGrid(),
+    })),
+  playExistingGame: (grid) =>
+    set(() => ({
+      grid: grid,
+      newGame: false,
+      playable: true,
+    })),
 }));

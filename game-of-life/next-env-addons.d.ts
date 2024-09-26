@@ -15,6 +15,9 @@ declare global {
       ENCRYPTION_SECRET_KEY: string;
       NEXTAUTH_URL: string;
       NEXTAUTH_SECRET: string;
+      SUPABASE_URL: string;
+      SUPABASE_KEY: string;
+      SUPABASE_BUCKET: string;
     }
   }
 }

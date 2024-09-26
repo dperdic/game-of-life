@@ -53,7 +53,7 @@ export const unpackBoard = async (
     return null;
   }
 
-  if (asset.ownership.owner !== publicKey(nftPublicKey)) {
+  if (asset.ownership.owner !== publicKey(walletPublicKey)) {
     console.error("Invalid asset owner");
     return null;
   }

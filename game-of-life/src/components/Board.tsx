@@ -24,6 +24,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { useSession } from "next-auth/react";
 import { packBoard } from "@/actions/BoardActions";
+import { useScreenshot } from "use-react-screenshot";
 
 export default function Board() {
   const program = useProgramContext();
@@ -46,6 +47,12 @@ export default function Board() {
 
   const [speed, setSpeed] = useState(INITIAL_SPEED);
   const speedRef = useRef(speed.milliseconds);
+
+  const gridRef = useRef(null);
+  const [image, takeScreenshot] = useScreenshot({
+    type: "image/png",
+    quality: 1,
+  });
 
   useEffect(() => {
     speedRef.current = speed.milliseconds;
@@ -85,14 +92,14 @@ export default function Board() {
 
     const newBoard = await packBoard(cNftId, localGrid);
 
-    console.log("packed board: ", newBoard);
-
     try {
       const tx = await program.methods
         .initializeBoard(new PublicKey(cNftId), newBoard)
         .rpc();
 
       const confirmation = await confirmTransaction(tx);
+
+      toast.success(`Initialize board transaction hash: ${tx}}`);
 
       if (confirmation.value.err) {
         console.error(confirmation.value.err);
@@ -179,6 +186,7 @@ export default function Board() {
 
           <div className="flex justify-center">
             <div
+              ref={gridRef}
               className="grid"
               style={{
                 gridTemplateColumns: `repeat(${GRID_SIZE}, 0fr)`,
@@ -210,6 +218,18 @@ export default function Board() {
           </div>
 
           <div className="flex flex-row justify-center gap-3">
+            <button
+              type="button"
+              className="btn btn-md btn-white"
+              onClick={() => {
+                takeScreenshot(gridRef.current as any);
+
+                console.log(image);
+              }}
+              disabled={inProgress}
+            >
+              Test
+            </button>
             {playable ? (
               <>
                 <button
@@ -285,7 +305,7 @@ export default function Board() {
                     type="text"
                     placeholder="Name"
                     value={localName}
-                    maxLength={10}
+                    maxLength={20}
                     onChange={(event) => {
                       setLocalName(event.target.value);
                     }}

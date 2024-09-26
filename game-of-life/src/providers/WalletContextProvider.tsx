@@ -27,11 +27,11 @@ export default function WalletContextProvider({
     return rpcUrl;
   }, []);
 
-  const onError = useCallback((error: WalletError, adapter?: Adapter) => {
+  const onError = useCallback(async (error: WalletError, adapter?: Adapter) => {
     console.error(error);
     toast.error(error.message ? `${error.name}: ${error.message}` : error.name);
 
-    signOut({ redirect: false }).then((res) => console.log(res));
+    await signOut({ redirect: false });
   }, []);
 
   return (

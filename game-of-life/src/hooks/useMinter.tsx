@@ -57,7 +57,7 @@ export default function useMinter() {
         });
 
         toast.success(
-          `Transaction hash: ${base58.deserialize(tx.signature)[0]}`,
+          `Mint cNFT transaction hash: ${base58.deserialize(tx.signature)[0]}`,
         );
 
         const leaf = await parseLeafFromMintToCollectionV1Transaction(

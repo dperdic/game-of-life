@@ -26,7 +26,7 @@ export default function Menu() {
   const { inProgress, setInProgress } = useTransactionStateStore();
   const { createNewGame, playExistingGame } = useBoardStateStore();
   const { setScreen } = useScreenStateStore();
-  const { data } = useSession();
+  const { data: session } = useSession();
   const { publicKey: walletPublicKey } = useWallet();
   const [existingNfts, setExistingNfts] = useState<CollectionAsset[]>([]);
 
@@ -99,14 +99,6 @@ export default function Menu() {
         owner: umi.identity.publicKey,
       })
       .then((res) => {
-        console.log(
-          res.items.filter(
-            (x) =>
-              x.grouping[0]?.group_value ===
-              process.env.NEXT_PUBLIC_COLLECTION_NFT,
-          ),
-        );
-
         const collectionAssets = res.items
           .filter(
             (x) =>
@@ -144,17 +136,17 @@ export default function Menu() {
           <h3 className="text-center text-lg font-semibold">Your games</h3>
 
           <div className="flex flex-row flex-wrap justify-center gap-4">
-            {existingNfts.map((x) => (
+            {existingNfts.map((asset) => (
               <button
-                key={x.id}
+                key={asset.id}
                 type="button"
                 className="btn btn-md btn-white"
-                disabled={inProgress || !data}
+                disabled={inProgress || !session}
                 onClick={async () => {
-                  await handlePlayExistingGame(x.id);
+                  await handlePlayExistingGame(asset.id);
                 }}
               >
-                {x.name}
+                {asset.name}
               </button>
             ))}
           </div>

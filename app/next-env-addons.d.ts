@@ -11,6 +11,7 @@ declare global {
       //server vars
       RPC_URL: string;
       SOL_CLUSTER: string;
+      COLLECTION_NFT: string;
       ENCRYPTION_SECRET_KEY: string;
       NEXTAUTH_URL: string;
       NEXTAUTH_SECRET: string;

@@ -57,6 +57,11 @@ export const unpackBoard = async (
     return null;
   }
 
+  if (asset.grouping[0]?.group_value !== process.env.COLLECTION_NFT) {
+    console.log("Asset does not bellong to the collection");
+    return null;
+  }
+
   if (asset.burnt) {
     console.error("Asset burnt");
     return null;

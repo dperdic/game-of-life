@@ -96,6 +96,10 @@ export const uploadNft = async (
     image: storedFile.publicUrl,
     attributes: [
       {
+        trait_type: "Category",
+        value: "Game of life board",
+      },
+      {
         trait_type: "Game url",
         value: "https://game-of-life-six-khaki.vercel.app",
       },

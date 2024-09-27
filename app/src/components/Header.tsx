@@ -17,7 +17,7 @@ import { toast } from "react-toastify";
 
 export default function Header() {
   const { inProgress, setInProgress } = useTransactionStateStore();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const { connected, publicKey, signMessage, disconnect, wallet } = useWallet();
   const { setVisible } = useWalletModal();
   const { resetGame } = useBoardStateStore();
@@ -84,10 +84,10 @@ export default function Header() {
   }, [connected, handleSignOut, publicKey, setInProgress, signMessage]);
 
   useEffect(() => {
-    if (connected && !session) {
+    if (connected && status === "unauthenticated") {
       handleSignIn();
     }
-  }, [connected, handleSignIn, publicKey, session]);
+  }, [connected, handleSignIn, publicKey, status]);
 
   // useEffect(() => {
   //   if (currentPublicKey && publicKey && !currentPublicKey.equals(publicKey)) {
@@ -118,7 +118,7 @@ export default function Header() {
             }
           }}
         >
-          {session ? "Sign out" : "Sign in"}
+          {status === "authenticated" ? "Sign out" : "Sign in"}
         </button>
       </nav>
     </header>

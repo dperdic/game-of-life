@@ -41,21 +41,26 @@ export default function Menu() {
     setInProgress(true);
 
     if (!program) {
-      toast.error("program doesn't exist");
       setInProgress(false);
 
       return;
     }
 
     if (!umi) {
-      toast.error("umi doesn't exist");
       setInProgress(false);
 
       return;
     }
 
     if (!walletPublicKey) {
-      toast.error("Wallet not connected, public key does not exist");
+      toast.error("Wallet not connected");
+      setInProgress(false);
+
+      return;
+    }
+
+    if (!session) {
+      toast.error("You are not signed in");
       setInProgress(false);
 
       return;
@@ -73,7 +78,7 @@ export default function Menu() {
       );
 
       if (!unpackedBoard) {
-        toast.error("board doesn't exist");
+        toast.error("Board doesn't exist");
         setInProgress(false);
 
         return;
@@ -118,18 +123,8 @@ export default function Menu() {
   }, [dasApiRpc, umi]);
 
   return (
-    <div className="flex flex-col justify-center gap-8 overflow-hidden overflow-x-auto rounded-lg border bg-white p-4 shadow">
+    <div className="flex flex-col justify-center gap-4 overflow-hidden overflow-x-auto rounded-lg border bg-white p-4 shadow">
       <h3 className="text-center text-xl font-semibold">Menu</h3>
-
-      <div className="text-center">
-        <button
-          type="button"
-          className="btn btn-md btn-black"
-          onClick={handleStartNewGame}
-        >
-          New game
-        </button>
-      </div>
 
       {existingNfts && !!existingNfts.length && (
         <div className="space-y-4">
@@ -152,6 +147,16 @@ export default function Menu() {
           </div>
         </div>
       )}
+
+      <div className="text-center">
+        <button
+          type="button"
+          className="btn btn-md btn-black"
+          onClick={handleStartNewGame}
+        >
+          New game
+        </button>
+      </div>
     </div>
   );
 }

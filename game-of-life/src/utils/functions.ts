@@ -2,6 +2,7 @@ import { GameOfLife } from "@/idls/game_of_life";
 import { GRID_SIZE } from "@/utils/constants";
 import { getProvider, Program } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
+import html2canvas from "html2canvas";
 import nacl from "tweetnacl";
 
 export const confirmTransaction = async (tx: string) => {
@@ -151,4 +152,29 @@ export const decryptAndUnpackBoard = (
   const packedData = Array.from(new Uint32Array(decryptedData.buffer).slice(8));
 
   return unpackBoard(packedData);
+};
+
+export const captureImage = async (
+  ref: any,
+  type: "image/jpeg" | "image/png",
+  quality: number,
+) => {
+  const canvas = await html2canvas(ref);
+
+  const croppedCanvas = document.createElement("canvas");
+  const croppedCanvasContext = croppedCanvas.getContext("2d"); // init data
+
+  const cropPositionTop = 0;
+  const cropPositionLeft = 0;
+  const cropWidth = canvas.width;
+  const cropHeight = canvas.height;
+
+  croppedCanvas.width = cropWidth;
+  croppedCanvas.height = cropHeight;
+
+  croppedCanvasContext!.drawImage(canvas, cropPositionLeft, cropPositionTop);
+
+  const base64Image = croppedCanvas.toDataURL(type, quality);
+
+  return base64Image.split("data:image/png;base64,")[1];
 };

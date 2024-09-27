@@ -7,12 +7,13 @@ import {
 import { publicKey } from "@metaplex-foundation/umi";
 import { base58 } from "@metaplex-foundation/umi/serializers";
 import useUmi from "@/hooks/useUmi";
+import { uploadNft } from "@/actions/BoardActions";
 
 export default function useMinter() {
   const { umi } = useUmi();
 
   const mintToCollection = useCallback(
-    async (name: string) => {
+    async (imageString: string, name: string, description: string) => {
       if (!umi) {
         toast.error("Umi not initialized");
 
@@ -27,6 +28,12 @@ export default function useMinter() {
       }
 
       try {
+        const metadataUrl = await uploadNft(imageString, name, description);
+
+        if (!metadataUrl) {
+          throw "An error occured while uploading Nft";
+        }
+
         const tx = await mintToCollectionV1(umi, {
           leafOwner: umi.identity.publicKey,
           merkleTree: publicKey(merkleTreeAddress),
@@ -34,7 +41,7 @@ export default function useMinter() {
           metadata: {
             name: name,
             symbol: process.env.NEXT_PUBLIC_CNFT_SYMBOL,
-            uri: process.env.NEXT_PUBLIC_METADATA_URL,
+            uri: metadataUrl,
             sellerFeeBasisPoints: 10000,
             isMutable: true,
             collection: { key: publicKey(collectionAddress), verified: true },

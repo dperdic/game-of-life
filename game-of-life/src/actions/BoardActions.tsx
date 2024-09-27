@@ -1,6 +1,7 @@
 "use server";
 
 import { getSession } from "@/lib/auth";
+import { createClient } from "@/supabase/server";
 import { decryptAndUnpackBoard, packAndEncryptBoard } from "@/utils/functions";
 import {
   dasApi,
@@ -11,6 +12,7 @@ import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import { publicKey } from "@metaplex-foundation/umi";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { Cluster, clusterApiUrl } from "@solana/web3.js";
+import { decode } from "base64-arraybuffer";
 
 const umi = createUmi(
   process.env.RPC_URL || clusterApiUrl(process.env.SOL_CLUSTER as Cluster),
@@ -21,6 +23,9 @@ const umi = createUmi(
   .use(dasApi());
 
 const dasApiRpc = createDasApiDecorator(umi.rpc);
+
+const supabase = createClient();
+const bucket = process.env.SUPABASE_BUCKET;
 
 export const packBoard = async (nftPublicKey: string, board: number[][]) => {
   return packAndEncryptBoard(
@@ -62,4 +67,72 @@ export const unpackBoard = async (
     board,
     `${nftPublicKey}${process.env.ENCRYPTION_SECRET_KEY}`,
   );
+};
+
+export const uploadNft = async (
+  base64ImageString: string,
+  name: string,
+  description: string,
+) => {
+  const guid = crypto.randomUUID().split("-").join("");
+
+  const { data: imageResponse, error: imageError } = await supabase.storage
+    .from(bucket)
+    .upload(`nfts/images/${guid}.png`, decode(base64ImageString), {
+      upsert: true,
+    });
+
+  if (imageError) {
+    console.error("NFT upload failed, an error occured while saving image");
+    return;
+  }
+
+  const { data: storedFile } = supabase.storage
+    .from(bucket)
+    .getPublicUrl(imageResponse.path);
+
+  const metadata = {
+    name: name,
+    image: storedFile.publicUrl,
+    attributes: [
+      {
+        trait_type: "Game url",
+        value: "https://game-of-life-six-khaki.vercel.app",
+      },
+    ],
+    properties: {
+      files: [
+        {
+          uri: storedFile.publicUrl,
+          type: "image/png",
+          cdn: true,
+        },
+      ],
+      category: "image",
+    },
+    external_url: "https://game-of-life-six-khaki.vercel.app",
+    description: description,
+  };
+
+  const { data: metadataResponse, error: metadataError } =
+    await supabase.storage
+      .from(bucket)
+      .upload(`nfts/metadata/${guid}.json`, JSON.stringify(metadata), {
+        contentType: "application/json",
+        upsert: true,
+      });
+
+  if (metadataError) {
+    console.error(
+      "NFT upload failed, an error occured while uploading metadata",
+    );
+
+    return;
+  }
+
+  const { data: metadataUri } = supabase.storage
+    .from(bucket)
+    .getPublicUrl(metadataResponse.path);
+
+  return metadataUri.publicUrl;
 };

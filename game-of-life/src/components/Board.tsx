@@ -14,6 +14,7 @@ import {
   MAX_SPEED,
 } from "@/utils/constants";
 import {
+  captureImage,
   confirmTransaction,
   generateEmptyGrid,
   generateRandomGrid,
@@ -24,7 +25,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { useSession } from "next-auth/react";
 import { packBoard } from "@/actions/BoardActions";
-import { useScreenshot } from "use-react-screenshot";
 
 export default function Board() {
   const program = useProgramContext();
@@ -38,6 +38,7 @@ export default function Board() {
 
   const [generation, setGeneration] = useState<number>(0);
   const [localName, setLocalName] = useState<string>("");
+  const [localDescription, setLocalDescription] = useState<string>("");
   const [localGrid, setLocalGrid] = useState<number[][]>(() =>
     generateEmptyGrid(),
   );
@@ -49,10 +50,6 @@ export default function Board() {
   const speedRef = useRef(speed.milliseconds);
 
   const gridRef = useRef(null);
-  const [image, takeScreenshot] = useScreenshot({
-    type: "image/png",
-    quality: 1,
-  });
 
   useEffect(() => {
     speedRef.current = speed.milliseconds;
@@ -83,7 +80,14 @@ export default function Board() {
       return;
     }
 
-    const cNftId = await mintToCollection(localName);
+    const image = await captureImage(gridRef.current, "image/png", 1);
+
+    if (!image) {
+      setInProgress(false);
+      return;
+    }
+
+    const cNftId = await mintToCollection(image, localName, localDescription);
 
     if (!cNftId) {
       setInProgress(false);
@@ -182,7 +186,10 @@ export default function Board() {
         <h3 className="text-xl font-semibold">Access denied</h3>
       ) : (
         <>
-          <h3 className="text-center font-semibold">Generation {generation}</h3>
+          <h3 className="text-center text-xl font-semibold">
+            Insert board name here...
+          </h3>
+          <h4 className="text-center font-semibold">Generation {generation}</h4>
 
           <div className="flex justify-center">
             <div
@@ -218,18 +225,6 @@ export default function Board() {
           </div>
 
           <div className="flex flex-row justify-center gap-3">
-            <button
-              type="button"
-              className="btn btn-md btn-white"
-              onClick={() => {
-                takeScreenshot(gridRef.current as any);
-
-                console.log(image);
-              }}
-              disabled={inProgress}
-            >
-              Test
-            </button>
             {playable ? (
               <>
                 <button
@@ -300,25 +295,38 @@ export default function Board() {
               </>
             ) : (
               <div className="grid grid-cols-1 gap-3">
-                <div className="flex flex-row justify-center gap-3">
+                <div className="grid gap-3">
+                  <div className="flex flex-row justify-center gap-3">
+                    <input
+                      type="text"
+                      placeholder="Name"
+                      value={localName}
+                      maxLength={30}
+                      onChange={(event) => {
+                        setLocalName(event.target.value);
+                      }}
+                      className="block rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-gray-800 focus:outline-none focus:ring-gray-800 disabled:bg-gray-50 disabled:text-gray-500 sm:text-sm"
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-md btn-black"
+                      onClick={handleNewGame}
+                      disabled={inProgress || !localName}
+                    >
+                      New game
+                    </button>
+                  </div>
+
                   <input
                     type="text"
-                    placeholder="Name"
-                    value={localName}
-                    maxLength={20}
+                    placeholder="Description"
+                    value={localDescription}
+                    maxLength={60}
                     onChange={(event) => {
-                      setLocalName(event.target.value);
+                      setLocalDescription(event.target.value);
                     }}
                     className="block rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-gray-800 focus:outline-none focus:ring-gray-800 disabled:bg-gray-50 disabled:text-gray-500 sm:text-sm"
                   />
-                  <button
-                    type="button"
-                    className="btn btn-md btn-black"
-                    onClick={handleNewGame}
-                    disabled={inProgress || !localName}
-                  >
-                    New game
-                  </button>
                 </div>
 
                 <div className="flex flex-row justify-center gap-3">

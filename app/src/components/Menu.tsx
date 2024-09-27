@@ -27,7 +27,7 @@ export default function Menu() {
   const { createNewGame, playExistingGame } = useBoardStateStore();
   const { setScreen } = useScreenStateStore();
   const { data: session } = useSession();
-  const { publicKey: walletPublicKey } = useWallet();
+  const { publicKey } = useWallet();
   const [existingNfts, setExistingNfts] = useState<CollectionAsset[]>([]);
 
   const program = useProgramContext();
@@ -52,7 +52,7 @@ export default function Menu() {
       return;
     }
 
-    if (!walletPublicKey) {
+    if (!publicKey) {
       toast.error("Wallet not connected");
       setInProgress(false);
 
@@ -72,7 +72,7 @@ export default function Menu() {
       const board = await program.account.board.fetch(boardPda);
 
       const unpackedBoard = await unpackBoard(
-        walletPublicKey.toBase58(),
+        publicKey.toBase58(),
         id,
         board.packedBoard,
       );

@@ -42,7 +42,11 @@ export const unpackBoard = async (
   const session = await getSession();
 
   if (session?.user?.name !== walletPublicKey) {
-    console.error("invalid user: ", session?.user?.name, walletPublicKey);
+    console.error(
+      "invalid user\n",
+      `session: ${session?.user?.name}\n`,
+      `wallet: ${walletPublicKey}\n`,
+    );
     return null;
   }
 

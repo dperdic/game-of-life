@@ -28,11 +28,17 @@ interface BoardStateStore {
   newGame: boolean;
   playable: boolean;
   grid: number[][];
+  name: string | null;
+  description: string | null;
   setNewGame: (isNewGame: boolean) => void;
   setPlayable: (isPlayable: boolean) => void;
   setGrid: (newGrid: number[][]) => void;
   createNewGame: () => void;
-  playExistingGame: (grid: number[][]) => void;
+  playExistingGame: (game: {
+    grid: number[][];
+    name: string;
+    description: string;
+  }) => void;
   resetGame: () => void;
 }
 
@@ -40,6 +46,8 @@ export const useBoardStateStore = create<BoardStateStore>((set) => ({
   newGame: true,
   playable: false,
   grid: generateEmptyGrid(),
+  name: null,
+  description: null,
   setNewGame: (isNewGame) => set((state) => ({ ...state, newGame: isNewGame })),
   setPlayable: (isPlayable) =>
     set((state) => ({ ...state, playable: isPlayable })),
@@ -47,22 +55,28 @@ export const useBoardStateStore = create<BoardStateStore>((set) => ({
 
   createNewGame: () =>
     set(() => ({
+      name: null,
+      description: null,
+      grid: generateEmptyGrid(),
       newGame: true,
       playable: false,
-      grid: generateEmptyGrid(),
     })),
 
-  playExistingGame: (grid) =>
+  playExistingGame: (game) =>
     set(() => ({
-      grid: grid,
+      name: game.name,
+      description: game.description,
+      grid: game.grid,
       newGame: false,
       playable: true,
     })),
 
   resetGame: () =>
     set(() => ({
+      name: null,
+      description: null,
+      grid: generateEmptyGrid(),
       newGame: true,
       playable: false,
-      grid: generateEmptyGrid(),
     })),
 }));

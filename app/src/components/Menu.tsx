@@ -19,6 +19,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 type CollectionAsset = {
   id: string;
   name: string;
+  description: string;
 };
 
 export default function Menu() {
@@ -37,7 +38,7 @@ export default function Menu() {
     setScreen(ScreenType.Board);
   };
 
-  const handlePlayExistingGame = async (id: string) => {
+  const handlePlayExistingGame = async (asset: CollectionAsset) => {
     setInProgress(true);
 
     if (!program) {
@@ -67,13 +68,13 @@ export default function Menu() {
     }
 
     try {
-      const boardPda = getBoardPda(program, new PublicKey(id));
+      const boardPda = getBoardPda(program, new PublicKey(asset.id));
 
       const board = await program.account.board.fetch(boardPda);
 
       const unpackedBoard = await unpackBoard(
         publicKey.toBase58(),
-        id,
+        asset.id,
         board.packedBoard,
       );
 
@@ -84,7 +85,11 @@ export default function Menu() {
         return;
       }
 
-      playExistingGame(unpackedBoard);
+      playExistingGame({
+        name: asset.name,
+        description: asset.description,
+        grid: unpackedBoard,
+      });
       setScreen(ScreenType.Board);
     } catch (error) {
       console.error(error);
@@ -104,6 +109,8 @@ export default function Menu() {
         owner: umi.identity.publicKey,
       })
       .then((res) => {
+        // console.log("cNfts: ", res);
+
         const collectionAssets = res.items
           .filter(
             (x) =>
@@ -115,6 +122,7 @@ export default function Menu() {
               ({
                 id: x.id,
                 name: x.content.metadata.name,
+                description: x.content.metadata.description,
               }) as CollectionAsset,
           );
 
@@ -138,7 +146,7 @@ export default function Menu() {
                 className="btn btn-md btn-white"
                 disabled={inProgress || !session}
                 onClick={async () => {
-                  await handlePlayExistingGame(asset.id);
+                  await handlePlayExistingGame(asset);
                 }}
               >
                 {asset.name}

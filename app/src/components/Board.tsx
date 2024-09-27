@@ -30,7 +30,7 @@ export default function Board() {
   const program = useProgramContext();
 
   const { status } = useSession();
-  const { playable, grid, newGame, setGrid, setPlayable } =
+  const { playable, grid, newGame, name, description, playExistingGame } =
     useBoardStateStore();
   const { inProgress, setInProgress } = useTransactionStateStore();
 
@@ -113,9 +113,11 @@ export default function Board() {
         return;
       }
 
-      setGrid(localGrid);
-
-      setPlayable(true);
+      playExistingGame({
+        name: localName,
+        description: localDescription,
+        grid: localGrid,
+      });
     } catch (error) {
       console.error(error);
       toast.error("An error occured while initializing board");
@@ -180,15 +182,22 @@ export default function Board() {
     setLocalGrid(() => (randomize ? generateRandomGrid() : grid));
   };
 
+  const test = async () => {
+    const image = await captureImage(gridRef.current, "image/png", 1);
+    console.log(image);
+  };
+
   return (
     <div className="flex flex-col justify-center gap-4 overflow-hidden overflow-x-auto rounded-lg border bg-white p-4 shadow">
       {status !== "authenticated" ? (
         <h3 className="text-xl font-semibold">Access denied</h3>
       ) : (
         <>
-          <h3 className="text-center text-xl font-semibold">
-            Insert board name here...
-          </h3>
+          {name && (
+            <h3 className="text-center text-xl font-semibold">{name}</h3>
+          )}
+
+          {description && <h3 className="text-center">{description}</h3>}
           <h4 className="text-center font-semibold">Generation {generation}</h4>
 
           <div className="flex justify-center">
@@ -311,7 +320,7 @@ export default function Board() {
                       type="button"
                       className="btn btn-md btn-black"
                       onClick={handleNewGame}
-                      disabled={inProgress || !localName}
+                      disabled={inProgress || !localName || !localDescription}
                     >
                       New game
                     </button>
@@ -351,6 +360,14 @@ export default function Board() {
               </div>
             )}
           </div>
+          {/* <button
+            type="button"
+            className="btn btn-md btn-white"
+            onClick={test}
+            disabled={inProgress}
+          >
+            Test
+          </button> */}
         </>
       )}
     </div>
